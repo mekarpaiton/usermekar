@@ -1,0 +1,36 @@
+name: Build Web & APK dan Deploy
+on:
+  push:
+    branches: [ main ]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.3'
+          channel: 'stable'
+          
+      - run: flutter pub get
+      
+      # 1. Build Flutter Web - ini yang nampilin app kamu di index.html
+      - run: flutter build web --release --base-href /usermekar/
+      
+      # 2. Build APK sekalian biar ada file downloadnya
+      - run: flutter build apk --release
+      
+      # 3. Gabungin Web + APK jadi satu folder
+      - name: Siapkan Halaman Web + APK
+        run: |
+          cp -r build/web dist
+          mkdir dist/download
+          cp build/app/outputs/flutter-apk/app-release.apk dist/download/TB-MEKAR.apk
+          
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
