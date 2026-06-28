@@ -227,17 +227,7 @@ class TBMekarApp extends StatelessWidget {
 }
 
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: Image.asset('assets/images/splashmekar.png',
-          width: MediaQuery.of(context).size.width * 0.8),
-      ),
-    );
-  }
-}
+  
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
