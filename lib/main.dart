@@ -5,18 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const String baseUrl = 'https://abahkhuzai.pythonanywhere.com';
 const String waAdmin = '628123453941';
-const Color warnaUtama = Color(0xFF16A34A);
-
-
-
-void main() {
-  runApp(const TBMekarApp());
-}
-
-import 'package:flutter/material.dart';
-
-// 1. DEFINISIIN WARNA UTAMA DULU BOS 👇
-const Color warnaUtama = Color(0xFF7F00FF); // Ungu Mekar
+const Color warnaUtama = Color(0xFF7F00FF); // PAKE UNGU AJA BOS
 
 void main() {
   runApp(const TBMekarApp());
@@ -31,12 +20,12 @@ class TBMekarApp extends StatelessWidget {
       title: 'TB. MEKAR',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple, // Biar nyambung sama ungu
+        primarySwatch: Colors.deepPurple,
         primaryColor: warnaUtama,
         scaffoldBackgroundColor: Colors.white,
         appBarTheme: const AppBarTheme(
           backgroundColor: warnaUtama,
-          foregroundColor: Colors.white, // Warna teks AppBar
+          foregroundColor: Colors.white,
           elevation: 0,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
@@ -66,8 +55,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late Animation<Alignment> _alignmentAnimation;
   late AnimationController _rippleController;
 
-  bool _isAtCenter = false; 
-  bool _isClicked = false; 
+  bool _isAtCenter = false;
+  bool _isClicked = false;
 
   @override
   void initState() {
@@ -84,19 +73,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     );
 
     _alignmentAnimation = Tween<Alignment>(
-      begin: const Alignment(2.2 , 3.2), 
-      end: Alignment.center, 
+      begin: const Alignment(2.2, 3.2),
+      end: Alignment.center,
     ).animate(CurvedAnimation(
       parent: _controller,
-      curve: Curves.fastOutSlowIn, 
+      curve: Curves.fastOutSlowIn,
     ));
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         if (mounted) {
           setState(() {
-            _isAtCenter = true; 
-            _isClicked = true; 
+            _isAtCenter = true;
+            _isClicked = true;
           });
           _rippleController.forward();
         }
@@ -108,7 +97,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const HomePage()), 
+            MaterialPageRoute(builder: (_) => const HomePage()),
           );
         }
       }
@@ -128,16 +117,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF7F00FF),
-      extendBodyBehindAppBar: true, // BIAR FULL
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, // TRANSPARAN
+        backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
         title: const Text(
           'TB. MEKAR',
           style: TextStyle(
-            color: Colors.white, 
-            fontWeight: FontWeight.w500, 
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
             fontSize: 20,
             shadows: [Shadow(blurRadius: 4, color: Colors.black54)]
           ),
@@ -147,11 +136,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/splashmekar.png', 
-              fit: BoxFit.cover,       
+              'assets/images/splashmekar.png',
+              fit: BoxFit.cover,
             ),
           ),
-
           if (_isClicked)
             AnimatedBuilder(
               animation: _rippleController,
@@ -164,32 +152,31 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 );
               },
             ),
-
           AnimatedBuilder(
             animation: _alignmentAnimation,
             builder: (context, child) {
               return Align(
                 alignment: _alignmentAnimation.value,
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300), 
+                  duration: const Duration(milliseconds: 300),
                   transitionBuilder: (Widget child, Animation<double> animation) {
                     return ScaleTransition(scale: animation, child: child);
                   },
                   child: _isAtCenter
-                      ? AnimatedContainer(
+                     ? AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
-                          transformAlignment: Alignment.center, 
-                          transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
+                          transformAlignment: Alignment.center,
+                          transform: Matrix4.identity()..scale(_isClicked? 0.85 : 1.0),
                           child: const Text(
                             '📸',
                             key: ValueKey('finger_icon'),
-                            style: TextStyle(fontSize: 60), 
+                            style: TextStyle(fontSize: 60),
                           ),
                         )
                       : const Text(
                           '📷',
                           key: ValueKey('tools_icon'),
-                          style: TextStyle(fontSize: 85), 
+                          style: TextStyle(fontSize: 85),
                         ),
                 ),
               );
@@ -199,10 +186,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       ),
     );
   }
-} // KURUNG PENUTUP _SplashScreenState 👈
+}
 
 // =================================================================
-// PELUKIS GELOMBANG KEJUT - DI LUAR CLASS, JANGAN DOBEL
+// PELUKIS GELOMBANG KEJUT
 // =================================================================
 class ShockwavePainter extends CustomPainter {
   final double progress;
@@ -213,19 +200,19 @@ class ShockwavePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
 
     final paint1 = Paint()
-      ..color = const Color(0xff26a69a).withOpacity(1.0 - progress) 
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0 * (1.0 - progress); 
+     ..color = const Color(0xff26a69a).withOpacity(1.0 - progress)
+     ..style = PaintingStyle.stroke
+     ..strokeWidth = 4.0 * (1.0 - progress);
 
-    double radius1 = progress * 130; 
+    double radius1 = progress * 130;
     canvas.drawCircle(center, radius1, paint1);
 
     if (progress > 0.2) {
       final progress2 = (progress - 0.2) / 0.8;
       final paint2 = Paint()
-        ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5 * (1.0 - progress2);
+       ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
+       ..style = PaintingStyle.stroke
+       ..strokeWidth = 2.5 * (1.0 - progress2);
 
       double radius2 = progress2 * 90;
       canvas.drawCircle(center, radius2, paint2);
@@ -234,12 +221,12 @@ class ShockwavePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ShockwavePainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress!= progress;
   }
 }
 
 // =================================================================
-// HOME PAGE DUMMY
+// HOME PAGE
 // =================================================================
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -294,9 +281,9 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: loading
-        ? const Center(child: CircularProgressIndicator())
+       ? const Center(child: CircularProgressIndicator())
           : produk.isEmpty
-            ? const Center(child: Text('Belum ada produk'))
+           ? const Center(child: Text('Belum ada produk'))
               : ListView.builder(
                   itemCount: produk.length,
                   itemBuilder: (c, i) {
