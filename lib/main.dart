@@ -7,6 +7,8 @@ const String baseUrl = 'https://abahkhuzai.pythonanywhere.com';
 const String waAdmin = '628123453941';
 const Color warnaUtama = Color(0xFF16A34A);
 
+import 'package:flutter/material.dart';
+
 void main() {
   runApp(const TBMekarApp());
 }
@@ -25,7 +27,7 @@ class TBMekarApp extends StatelessWidget {
 }
 
 // =================================================================
-// WIDGET SPLASH SCREEN MURNI OTOMATIS (EFEK RADAR SEPUSAT & PRESISI)
+// SPLASH SCREEN
 // =================================================================
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -37,8 +39,6 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Alignment> _alignmentAnimation;
-
-  // Mesin animasi untuk efek gelombang kejut otomatis
   late AnimationController _rippleController;
 
   bool _isAtCenter = false; 
@@ -48,19 +48,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
-    // 1. Animasi pergerakan ikon mendarat (2 Detik)
     _controller = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
 
-    // 2. Animasi efek kejut/radar otomatis (700ms)
     _rippleController = AnimationController(
       duration: const Duration(milliseconds: 700),
       vsync: this,
     );
 
-    // 🔥 KITA KUNCI: Titik akhir (end) wajib mendarat di Alignment.center (0.0, 0.0)
     _alignmentAnimation = Tween<Alignment>(
       begin: const Alignment(2.2 , 3.2), 
       end: Alignment.center, 
@@ -69,7 +66,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       curve: Curves.fastOutSlowIn, 
     ));
 
-    // Pemicu Otomatis saat gerakan mendarat selesai
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         if (mounted) {
@@ -77,12 +73,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             _isAtCenter = true; 
             _isClicked = true; 
           });
-          _rippleController.forward(); // 💥 Jalankan radar otomatis
+          _rippleController.forward();
         }
       }
     });
 
-    // Pindah halaman otomatis setelah efek radar selesai memudar
     _rippleController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         if (mounted) {
@@ -105,87 +100,84 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: const Color(0xFF7F00FF),
-    extendBodyBehindAppBar: true, // 1. TAMBAHIN INI BOS 👈
-    appBar: AppBar(
-      backgroundColor: Colors.transparent, // 2. GANTI JADI TRANSPARAN 👈
-      elevation: 0, // 3. GANTI JADI 0 👈
-      automaticallyImplyLeading: false,
-      title: const Text(
-        'TB. MEKAR',
-        style: TextStyle(
-          color: Colors.white, 
-          fontWeight: FontWeight.w500, 
-          fontSize: 20,
-          shadows: [ // Biar tulisan kebaca di atas gambar
-            Shadow(blurRadius: 4, color: Colors.black54)
-          ]
-        ),
-      ),
-    ),
-    body: Stack(
-      children: [
-        Positioned.fill(
-          child: Image.asset(
-            'assets/images/splashmekar.png', 
-            fit: BoxFit.cover, // INI UDAH BENER, JANGAN DIUBAH       
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF7F00FF),
+      extendBodyBehindAppBar: true, // BIAR FULL
+      appBar: AppBar(
+        backgroundColor: Colors.transparent, // TRANSPARAN
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'TB. MEKAR',
+          style: TextStyle(
+            color: Colors.white, 
+            fontWeight: FontWeight.w500, 
+            fontSize: 20,
+            shadows: [Shadow(blurRadius: 4, color: Colors.black54)]
           ),
         ),
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/splashmekar.png', 
+              fit: BoxFit.cover,       
+            ),
+          ),
 
-        // LAPISAN EFEK: Menggambar garis radar melingkar otomatis di tengah-tengah
-        if (_isClicked)
+          if (_isClicked)
+            AnimatedBuilder(
+              animation: _rippleController,
+              builder: (context, child) {
+                return Center(
+                  child: CustomPaint(
+                    painter: ShockwavePainter(progress: _rippleController.value),
+                    size: const Size(200, 200),
+                  ),
+                );
+              },
+            ),
+
           AnimatedBuilder(
-            animation: _rippleController,
+            animation: _alignmentAnimation,
             builder: (context, child) {
-              return Center(
-                child: CustomPaint(
-                  painter: ShockwavePainter(progress: _rippleController.value),
-                  size: const Size(200, 200),
+              return Align(
+                alignment: _alignmentAnimation.value,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300), 
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return ScaleTransition(scale: animation, child: child);
+                  },
+                  child: _isAtCenter
+                      ? AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          transformAlignment: Alignment.center, 
+                          transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
+                          child: const Text(
+                            '👆',
+                            key: ValueKey('finger_icon'),
+                            style: TextStyle(fontSize: 60), 
+                          ),
+                        )
+                      : const Text(
+                          '🪂',
+                          key: ValueKey('tools_icon'),
+                          style: TextStyle(fontSize: 85), 
+                        ),
                 ),
               );
             },
           ),
-
-        // LAPISAN UTAMA: Pergerakan Icon Alat (Murni Visual Otomatis)
-        AnimatedBuilder(
-          animation: _alignmentAnimation,
-          builder: (context, child) {
-            return Align(
-              alignment: _alignmentAnimation.value,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300), 
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return ScaleTransition(scale: animation, child: child);
-                },
-                child: _isAtCenter
-                    ? AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        transformAlignment: Alignment.center, 
-                        transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
-                        child: const Text(
-                          '📸',
-                          key: ValueKey('finger_icon'),
-                          style: TextStyle(fontSize: 60), 
-                        ),
-                      )
-                    : const Text(
-                        '📷',
-                        key: ValueKey('tools_icon'),
-                        style: TextStyle(fontSize: 85), 
-                      ),
-              ),
-            );
-          },
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
+} // KURUNG PENUTUP _SplashScreenState 👈
 
 // =================================================================
-// PELUKIS GELOMBANG KEJUT (SHOCKWAVE RADAR PAINTER)
+// PELUKIS GELOMBANG KEJUT - DI LUAR CLASS, JANGAN DOBEL
 // =================================================================
 class ShockwavePainter extends CustomPainter {
   final double progress;
@@ -195,7 +187,6 @@ class ShockwavePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
 
-    // Ring 1: Gelombang Kejut Utama (Warna Hijau Trading)
     final paint1 = Paint()
       ..color = const Color(0xff26a69a).withOpacity(1.0 - progress) 
       ..style = PaintingStyle.stroke
@@ -204,7 +195,6 @@ class ShockwavePainter extends CustomPainter {
     double radius1 = progress * 130; 
     canvas.drawCircle(center, radius1, paint1);
 
-    // Ring 2: Gelombang Lapisan Kedua (Warna Cyan Listrik)
     if (progress > 0.2) {
       final progress2 = (progress - 0.2) / 0.8;
       final paint2 = Paint()
@@ -224,44 +214,24 @@ class ShockwavePainter extends CustomPainter {
 }
 
 // =================================================================
-// PELUKIS GELOMBANG KEJUT (SHOCKWAVE RADAR PAINTER)
+// HOME PAGE DUMMY - GANTI SAMA PUNYA KAMU
 // =================================================================
-class ShockwavePainter extends CustomPainter {
-  final double progress;
-  ShockwavePainter({required this.progress});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-
-    // Ring 1: Gelombang Kejut Utama (Warna Hijau Trading)
-    final paint1 = Paint()
-      ..color = const Color(0xff26a69a).withOpacity(1.0 - progress) 
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0 * (1.0 - progress); 
-
-    double radius1 = progress * 130; 
-    canvas.drawCircle(center, radius1, paint1);
-
-    // Ring 2: Gelombang Lapisan Kedua (Warna Cyan Listrik)
-    if (progress > 0.2) {
-      final progress2 = (progress - 0.2) / 0.8;
-      final paint2 = Paint()
-        ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5 * (1.0 - progress2);
-
-      double radius2 = progress2 * 90;
-      canvas.drawCircle(center, radius2, paint2);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant ShockwavePainter oldDelegate) {
-    return oldDelegate.progress != progress;
-  }
+  State<HomePage> createState() => _HomePageState();
 }
 
+class _HomePageState extends State<HomePage> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Home TB. MEKAR')),
+      body: const Center(child: Text('Halaman Utama')),
+    );
+  }
+}
 class TBMekarApp extends StatelessWidget {
   const TBMekarApp({super.key});
 
@@ -281,7 +251,7 @@ class TBMekarApp extends StatelessWidget {
       home: const SplashScreen(),
     );
   }
-}
+
 
 
   
