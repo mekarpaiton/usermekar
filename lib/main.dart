@@ -13,14 +13,39 @@ void main() {
   runApp(const TBMekarApp());
 }
 
+import 'package:flutter/material.dart';
+
+// 1. DEFINISIIN WARNA UTAMA DULU BOS 👇
+const Color warnaUtama = Color(0xFF7F00FF); // Ungu Mekar
+
+void main() {
+  runApp(const TBMekarApp());
+}
+
 class TBMekarApp extends StatelessWidget {
   const TBMekarApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.dark(),
+      title: 'TB. MEKAR',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple, // Biar nyambung sama ungu
+        primaryColor: warnaUtama,
+        scaffoldBackgroundColor: Colors.white,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: warnaUtama,
+          foregroundColor: Colors.white, // Warna teks AppBar
+          elevation: 0,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: warnaUtama,
+            foregroundColor: Colors.white,
+          ),
+        ),
+      ),
       home: const SplashScreen(),
     );
   }
@@ -156,13 +181,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           transformAlignment: Alignment.center, 
                           transform: Matrix4.identity()..scale(_isClicked ? 0.85 : 1.0),
                           child: const Text(
-                            '👆',
+                            '📸',
                             key: ValueKey('finger_icon'),
                             style: TextStyle(fontSize: 60), 
                           ),
                         )
                       : const Text(
-                          '🪂',
+                          '📷',
                           key: ValueKey('tools_icon'),
                           style: TextStyle(fontSize: 85), 
                         ),
@@ -214,48 +239,8 @@ class ShockwavePainter extends CustomPainter {
 }
 
 // =================================================================
-// HOME PAGE DUMMY - GANTI SAMA PUNYA KAMU
+// HOME PAGE DUMMY
 // =================================================================
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Home TB. MEKAR')),
-      body: const Center(child: Text('Halaman Utama')),
-    );
-  }
-}
-class TBMekarApp extends StatelessWidget {
-  const TBMekarApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TB. MEKAR',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        primaryColor: warnaUtama,
-        appBarTheme: const AppBarTheme(backgroundColor: warnaUtama),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(backgroundColor: warnaUtama),
-        ),
-      ),
-      home: const SplashScreen(),
-    );
-  }
-
-}
-
-  
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -309,9 +294,9 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: loading
-         ? const Center(child: CircularProgressIndicator())
+        ? const Center(child: CircularProgressIndicator())
           : produk.isEmpty
-             ? const Center(child: Text('Belum ada produk'))
+            ? const Center(child: Text('Belum ada produk'))
               : ListView.builder(
                   itemCount: produk.length,
                   itemBuilder: (c, i) {
