@@ -1,0 +1,25 @@
+# Flutter / Dart - WAJIB
+.dart_tool/
+.packages
+build/
+.pub/
+
+# Android - WAJIB  
+android/.gradle/
+android/app/build/
+android/app/release/
+
+# File Sensitif - WAJIB BGT
+android/local.properties
+android/key.properties
+*.keystore
+*.jks
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Hasil Build
+*.apk
+*.aab

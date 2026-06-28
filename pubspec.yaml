@@ -1,0 +1,46 @@
+name: usermekar
+description: "Aplikasi User TB. MEKAR"
+publish_to: 'none' 
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+  url_launcher: ^6.3.0
+  flutter_native_splash: ^2.4.0
+  flutter_launcher_icons: ^0.13.1  
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/logomekar.png
+    - assets/images/splashmekar.png
+
+# Config Icon APK
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logomekar.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logomekar.png"
+
+# Config Splash Screen
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/splashmekar.png
+  android: true
+  ios: true
+  android_12:
+    image: assets/images/splashmekar.png
+    color: "#FFFFFF"
