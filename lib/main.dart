@@ -274,17 +274,32 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset('assets/images/logomekar.png', height: 35),
-            const SizedBox(width: 10),
-            const Text('TB. MEKAR'),
-          ],
+  title: Row(
+    children: [
+      Image.asset('assets/images/logomekar.png', height: 35),
+      const SizedBox(width: 10),
+      const Text('TB. MEKAR'),
+    ],
+  ),
+  actions: [
+    Consumer<CartProvider>(
+      builder: (ctx, cart, child) => badges.Badge(
+        showBadge: cart.totalItem > 0,
+        badgeContent: Text(cart.totalItem.toString(), style: TextStyle(color: Colors.white)),
+        child: IconButton(
+          icon: Icon(Icons.shopping_cart),
+          onPressed: () {
+            Navigator.push(context, MaterialPageRoute(
+              builder: (ctx) => HalamanCheckout(),
+            ));
+          },
         ),
-        actions: [
-          IconButton(onPressed: chatAdmin, icon: const Icon(Icons.chat)),
-        ],
       ),
+    ),
+    IconButton(onPressed: chatAdmin, icon: const Icon(Icons.chat)), // Icon chat kamu tetep ada
+    SizedBox(width: 8), // Kasih jarak biar nggak mepet
+  ],
+),
       body: loading
        ? const Center(child: CircularProgressIndicator())
           : produk.isEmpty
