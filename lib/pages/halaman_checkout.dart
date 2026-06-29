@@ -54,7 +54,7 @@ class HalamanCheckout extends StatelessWidget {
                           margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
                           child: ListTile(
                             leading: Image.network(
-                              item.imageUrl,
+                              item.gambar,
                               width: 50,
                               height: 50,
                               fit: BoxFit.cover,
