@@ -12,6 +12,7 @@ dependencies:
   http: ^1.2.0
   provider: ^6.1.2      # Buat keranjang
   url_launcher: ^6.3.0  # Buat buka WA
+  badges: ^3.1.2
   flutter_native_splash: ^2.4.0
   flutter_launcher_icons: ^0.13.1  
   cupertino_icons: ^1.0.8
