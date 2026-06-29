@@ -13,10 +13,10 @@ class HalamanCheckout extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Keranjang Belanja'),
-        backgroundColor: Colors.orange, // Ganti warnaUtama kamu
+        backgroundColor: Colors.orange,
       ),
       body: cart.items.isEmpty
-        ? Center(
+         ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -48,51 +48,54 @@ class HalamanCheckout extends StatelessWidget {
                         ),
                         onDismissed: (direction) {
                           Provider.of<CartProvider>(context, listen: false)
-                            .removeItem(productId);
+                             .removeItem(productId);
                         },
                         child: Card(
-  margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-  child: ListTile(
-    leading: Image.network(
-      item.gambar,
-      width: 50,
-      height: 50,
-      fit: BoxFit.cover,
-    ),
-    title: Text(item.nama),
-    subtitle: Text('Rp ${item.harga} x ${item.jumlah}'),
-    // ↓↓ Ganti trailing jadi Row isi tombol + - ↓↓↓
-    trailing: SizedBox(
-      width: 120,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // Tombol Kurang
-          IconButton(
-            icon: Icon(Icons.remove_circle, color: Colors.red),
-            onPressed: () {
-              Provider.of<CartProvider>(context, listen: false)
-                 .kurangItem(productId);
-            },
-          ),
-          // Angka Qty
-          Text(
-            '${item.jumlah}',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          // Tombol Tambah
-          IconButton(
-            icon: Icon(Icons.add_circle, color: Colors.green),
-            onPressed: () {
-              Provider.of<CartProvider>(context, listen: false)
-                 .tambahItem(productId);
-            },
-          ),
-        ],
-      ),
-    ),
-  ),
-),
+                          margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+                          child: ListTile(
+                            leading: Image.network(
+                              item.gambar,
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                            ),
+                            title: Text(item.nama),
+                            subtitle: Text('Rp ${item.harga} x ${item.jumlah}'),
+                            trailing: SizedBox(
+                              width: 120,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  // Tombol Kurang
+                                  IconButton(
+                                    icon: Icon(Icons.remove_circle, color: Colors.red),
+                                    onPressed: () {
+                                      Provider.of<CartProvider>(context, listen: false)
+                                         .kurangItem(productId);
+                                    },
+                                  ),
+                                  // Angka Qty
+                                  Text(
+                                    '${item.jumlah}',
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                  ),
+                                  // Tombol Tambah
+                                  IconButton(
+                                    icon: Icon(Icons.add_circle, color: Colors.green),
+                                    onPressed: () {
+                                      Provider.of<CartProvider>(context, listen: false)
+                                         .tambahItem(productId);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }, // ← Kurung tutup ListView.builder yg kurang
+                  ),
+                ), // ← Kurung tutup Expanded yg kurang
 
                 // Total Harga
                 Card(
@@ -108,7 +111,7 @@ class HalamanCheckout extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange, // Ganti warnaUtama
+                            color: Colors.orange,
                           ),
                         ),
                       ],
@@ -123,22 +126,32 @@ class HalamanCheckout extends StatelessWidget {
                   child: ElevatedButton.icon(
                     icon: Icon(Icons.chat),
                     label: Text('Checkout via WhatsApp', style: TextStyle(fontSize: 18)),
-                    onPressed: cart.items.isEmpty? null : () async { // ← Tambahin async
-  String pesan = "Halo TB. MEKAR, saya mau pesan:\n\n";
-  cart.items.forEach((key, item) {
-   pesan += "${item.nama} (${item.jumlah}x) - Rp ${item.harga * item.jumlah}\n";
-  });
-  pesan += "\nTotal: Rp ${cart.totalHarga}";
+                    onPressed: cart.items.isEmpty? null : () async {
+                      String pesan = "Halo TB. MEKAR, saya mau pesan:\n\n";
+                      cart.items.forEach((key, item) {
+                        pesan += "${item.nama} (${item.jumlah}x) - Rp ${item.harga * item.jumlah}\n";
+                      });
+                      pesan += "\nTotal: Rp ${cart.totalHarga}";
 
-  // Encode biar spasi & enter kebaca di WA
-  final encodedPesan = Uri.encodeComponent(pesan);
-  final waUrl = Uri.parse('https://wa.me/6281234567890?text=$encodedPesan'); // Ganti nomor kamu
+                      final encodedPesan = Uri.encodeComponent(pesan);
+                      final waUrl = Uri.parse('https://wa.me/6281234567890?text=$encodedPesan'); // Ganti nomor kamu
 
-  if (await canLaunchUrl(waUrl)) {
-    await launchUrl(waUrl, mode: LaunchMode.externalApplication);
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tidak bisa buka WhatsApp')),
+                      if (await canLaunchUrl(waUrl)) {
+                        await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Tidak bisa buka WhatsApp')),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
-},
+}
