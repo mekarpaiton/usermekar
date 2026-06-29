@@ -311,27 +311,28 @@ class _HomePageState extends State<HomePage> {
                     final p = produk[i];
                     final harga = json.decode(p['harga']);
                     return Card(
-                      margin: const EdgeInsets.all(8),
-                      child: ListTile(
-                        title: Text(p['nama'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Rp ${harga.values.first} / ${p['satuan']}'),
-                        trailing: ElevatedButton(
-                          onPressed: () {
-                            final text = 'Halo, saya mau pesan: ${p['nama']} - Rp ${harga.values.first}';
-                            launchUrl(Uri.parse('https://wa.me/$waAdmin?text=$text'));
-                          },
-                          child: const Text('Pesan'),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: chatAdmin,
-        backgroundColor: warnaUtama,
-        icon: const Icon(Icons.chat),
-        label: const Text('Chat Admin'),
-      ),
-    );
-  }
-}
+  margin: const EdgeInsets.all(8),
+  child: ListTile(
+    leading: Image.network(p['gambar'], width: 50, errorBuilder: (c, e, s) => Icon(Icons.image)),
+    title: Text(p['nama'], style: const TextStyle(fontWeight: FontWeight.bold)),
+    subtitle: Text('Rp ${harga.values.first} / ${p['satuan']}'),
+    trailing: IconButton(
+      icon: Icon(Icons.add_shopping_cart, color: warnaUtama),
+      onPressed: () {
+        Provider.of<CartProvider>(context, listen: false).addItem(
+          p['id'].toString(),
+          p['nama'],
+          int.parse(harga.values.first.toString()),
+          p['gambar'],
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${p['nama']} ditambahkan ke keranjang'),
+            duration: Duration(seconds: 1),
+            backgroundColor: warnaUtama,
+          ),
+        );
+      },
+    ),
+  ),
+);
