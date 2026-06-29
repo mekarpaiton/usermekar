@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // ← 1. Import baru
-import 'dart:convert'; // ← 2. Import baru
-import '../cart_item.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'cart_item.dart'; // ← UDAH BENER INI
+
 class CartProvider with ChangeNotifier {
   Map<String, CartItem> _items = {};
 
   CartProvider() {
-    loadCart(); // ← 3. Load pas app dibuka
+    loadCart();
   }
 
   Map<String, CartItem> get items => {..._items};
@@ -23,13 +24,13 @@ class CartProvider with ChangeNotifier {
       _items.putIfAbsent(id, () => CartItem(id: id, nama: nama, harga: harga, gambar: gambar));
     }
     notifyListeners();
-    saveCart(); // ← 4. Save tiap ada perubahan
+    saveCart();
   }
 
   void removeItem(String id) {
     _items.remove(id);
     notifyListeners();
-    saveCart(); // ← Save juga
+    saveCart();
   }
 
   void kurangItem(String id) {
@@ -43,7 +44,7 @@ class CartProvider with ChangeNotifier {
       _items.remove(id);
     }
     notifyListeners();
-    saveCart(); // ← Save juga
+    saveCart();
   }
 
   void tambahItem(String id) {
@@ -52,16 +53,15 @@ class CartProvider with ChangeNotifier {
       gambar: item.gambar, jumlah: item.jumlah + 1,
     ));
     notifyListeners();
-    saveCart(); // ← Save juga
+    saveCart();
   }
 
   void clear() {
     _items.clear();
     notifyListeners();
-    saveCart(); // ← Save juga
+    saveCart();
   }
 
-  // ↓↓ 5. FUNGSI BARU BUAT SIMPEN & LOAD ↓↓↓
   Future<void> saveCart() async {
     final prefs = await SharedPreferences.getInstance();
     final cartData = _items.map((key, item) => MapEntry(key, item.toJson()));
