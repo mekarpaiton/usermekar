@@ -18,26 +18,29 @@ class TBMekarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'TB. MEKAR',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        primaryColor: warnaUtama,
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: warnaUtama,
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
+    return ChangeNotifierProvider(
+      create: (ctx) => CartProvider(),
+      child: MaterialApp(
+        title: 'TB. MEKAR',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.deepPurple,
+          primaryColor: warnaUtama,
+          scaffoldBackgroundColor: Colors.white,
+          appBarTheme: const AppBarTheme(
             backgroundColor: warnaUtama,
             foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: warnaUtama,
+              foregroundColor: Colors.white,
+            ),
           ),
         ),
+        home: const SplashScreen(),
       ),
-      home: const SplashScreen(),
     );
   }
 }
