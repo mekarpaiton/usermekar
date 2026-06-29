@@ -98,25 +98,22 @@ class HalamanCheckout extends StatelessWidget {
                   child: ElevatedButton.icon(
                     icon: Icon(Icons.chat),
                     label: Text('Checkout via WhatsApp', style: TextStyle(fontSize: 18)),
-                    onPressed: cart.items.isEmpty? null : () {
-                      // Nanti isi kirim pesanan ke WA
-                      String pesan = "Halo TB. MEKAR, saya mau pesan:\n\n";
-                      cart.items.forEach((key, item) {
-                        pesan += "${item.nama} (${item.qty}x) - Rp ${item.harga * item.qty}\n";
-                      });
-                      pesan += "\nTotal: Rp ${cart.totalHarga}";
+                    onPressed: cart.items.isEmpty? null : () async { // ← Tambahin async
+  String pesan = "Halo TB. MEKAR, saya mau pesan:\n\n";
+  cart.items.forEach((key, item) {
+    pesan += "${item.nama} (${item.qty}x) - Rp ${item.harga * item.qty}\n";
+  });
+  pesan += "\nTotal: Rp ${cart.totalHarga}";
 
-                      // Ganti nomor WA admin kamu
-                      launchUrl(Uri.parse('https://wa.me/6281234567890?text=$pesan'));
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      backgroundColor: Colors.green,
-                    ),
-                  ),
-                )
-              ],
-            ),
+  // Encode biar spasi & enter kebaca di WA
+  final encodedPesan = Uri.encodeComponent(pesan);
+  final waUrl = Uri.parse('https://wa.me/6281234567890?text=$encodedPesan'); // Ganti nomor kamu
+
+  if (await canLaunchUrl(waUrl)) {
+    await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Tidak bisa buka WhatsApp')),
     );
   }
-}
+},
