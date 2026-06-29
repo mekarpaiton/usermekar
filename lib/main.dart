@@ -272,67 +272,92 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-  title: Row(
-    children: [
-      Image.asset('assets/images/logomekar.png', height: 35),
-      const SizedBox(width: 10),
-      const Text('TB. MEKAR'),
-    ],
-  ),
-  actions: [
-    Consumer<CartProvider>(
-      builder: (ctx, cart, child) => badges.Badge(
-        showBadge: cart.totalItem > 0,
-        badgeContent: Text(cart.totalItem.toString(), style: TextStyle(color: Colors.white)),
-        child: IconButton(
-          icon: Icon(Icons.shopping_cart),
-          onPressed: () {
-            Navigator.push(context, MaterialPageRoute(
-              builder: (ctx) => HalamanCheckout(),
-            ));
-          },
-        ),
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Row(
+        children: [
+          Image.asset('assets/images/logomekar.png', height: 35),
+          const SizedBox(width: 10),
+          const Text('TB. MEKAR'),
+        ],
       ),
-    ),
-    IconButton(onPressed: chatAdmin, icon: const Icon(Icons.chat)), // Icon chat kamu tetep ada
-    SizedBox(width: 8), // Kasih jarak biar nggak mepet
-  ],
-),
-      body: loading
-       ? const Center(child: CircularProgressIndicator())
-          : produk.isEmpty
-           ? const Center(child: Text('Belum ada produk'))
-              : ListView.builder(
-                  itemCount: produk.length,
-                  itemBuilder: (c, i) {
-                    final p = produk[i];
-                    final harga = json.decode(p['harga']);
-                    return Card(
-  margin: const EdgeInsets.all(8),
-  child: ListTile(
-    leading: Image.network(p['gambar'], width: 50, errorBuilder: (c, e, s) => Icon(Icons.image)),
-    title: Text(p['nama'], style: const TextStyle(fontWeight: FontWeight.bold)),
-    subtitle: Text('Rp ${harga.values.first} / ${p['satuan']}'),
-    trailing: IconButton(
-      icon: Icon(Icons.add_shopping_cart, color: warnaUtama),
-      onPressed: () {
-        Provider.of<CartProvider>(context, listen: false).addItem(
-          p['id'].toString(),
-          p['nama'],
-          int.parse(harga.values.first.toString()),
-          p['gambar'],
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${p['nama']} ditambahkan ke keranjang'),
-            duration: Duration(seconds: 1),
-            backgroundColor: warnaUtama,
+      actions: [
+        Consumer<CartProvider>(
+          builder: (ctx, cart, child) => badges.Badge(
+            showBadge: cart.totalItem > 0,
+            badgeContent: Text(
+              cart.totalItem.toString(),
+              style: TextStyle(color: Colors.white),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.shopping_cart),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (ctx) => HalamanCheckout()),
+                );
+              },
+            ),
           ),
-        );
-      },
+        ),
+        IconButton(onPressed: chatAdmin, icon: const Icon(Icons.chat)),
+        SizedBox(width: 8),
+      ],
     ),
-  ),
-);
+    body: loading
+       ? const Center(child: CircularProgressIndicator())
+        : produk.isEmpty
+           ? const Center(child: Text('Belum ada produk'))
+            : ListView.builder(
+                itemCount: produk.length,
+                itemBuilder: (c, i) {
+                  final p = produk[i];
+                  final harga = json.decode(p['harga']);
+                  return Card(
+                    margin: const EdgeInsets.all(8),
+                    child: ListTile(
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          p['gambar'],
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => Container(
+                            width: 50,
+                            height: 50,
+                            color: Colors.grey[300],
+                            child: Icon(Icons.image, color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        p['nama'],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text('Rp ${harga.values.first} / ${p['satuan']}'),
+                      trailing: IconButton(
+                        icon: Icon(Icons.add_shopping_cart, color: warnaUtama),
+                        onPressed: () {
+                          Provider.of<CartProvider>(context, listen: false).addItem(
+                            p['id'].toString(),
+                            p['nama'],
+                            int.parse(harga.values.first.toString()),
+                            p['gambar'],
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${p['nama']} ditambahkan ke keranjang'),
+                              duration: Duration(seconds: 1),
+                              backgroundColor: warnaUtama,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+  );
+} // <- Kurung kurawal penutup build
