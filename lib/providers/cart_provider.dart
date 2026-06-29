@@ -26,7 +26,32 @@ class CartProvider with ChangeNotifier {
     _items.remove(id);
     notifyListeners();
   }
+void kurangItem(String id) {
+  if (!_items.containsKey(id)) return;
+  if (_items[id]!.jumlah > 1) {
+    _items.update(id, (item) => CartItem(
+      id: item.id,
+      nama: item.nama,
+      harga: item.harga,
+      gambar: item.gambar,
+      jumlah: item.jumlah - 1,
+    ));
+  } else {
+    _items.remove(id); // Kalo qty tinggal 1, hapus aja
+  }
+  notifyListeners();
+}
 
+void tambahItem(String id) {
+  _items.update(id, (item) => CartItem(
+    id: item.id,
+    nama: item.nama,
+    harga: item.harga,
+    gambar: item.gambar,
+    jumlah: item.jumlah + 1,
+  ));
+  notifyListeners();
+}
   void clear() {
     _items.clear();
     notifyListeners();
