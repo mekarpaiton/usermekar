@@ -431,15 +431,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      // ← DIEDIT: 4. TAMBAH TOMBOL ADMIN PANEL
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (ctx) => HalamanAdmin()));
-        },
-        backgroundColor: Colors.red,
-        icon: Icon(Icons.admin_panel_settings),
-        label: Text('Admin'),
-      ),
+      
     );
   }
 }
