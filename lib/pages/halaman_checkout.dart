@@ -51,23 +51,48 @@ class HalamanCheckout extends StatelessWidget {
                             .removeItem(productId);
                         },
                         child: Card(
-                          margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-                          child: ListTile(
-                            leading: Image.network(
-                              item.gambar,
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                            ),
-                            title: Text(item.nama),
-                            subtitle: Text('Total: Rp ${item.harga * item.qty}'),
-                            trailing: Text('${item.qty} x', style: TextStyle(fontSize: 16)),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+  margin: EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+  child: ListTile(
+    leading: Image.network(
+      item.gambar,
+      width: 50,
+      height: 50,
+      fit: BoxFit.cover,
+    ),
+    title: Text(item.nama),
+    subtitle: Text('Rp ${item.harga} x ${item.jumlah}'),
+    // ↓↓ Ganti trailing jadi Row isi tombol + - ↓↓↓
+    trailing: SizedBox(
+      width: 120,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Tombol Kurang
+          IconButton(
+            icon: Icon(Icons.remove_circle, color: Colors.red),
+            onPressed: () {
+              Provider.of<CartProvider>(context, listen: false)
+                 .kurangItem(productId);
+            },
+          ),
+          // Angka Qty
+          Text(
+            '${item.jumlah}',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          // Tombol Tambah
+          IconButton(
+            icon: Icon(Icons.add_circle, color: Colors.green),
+            onPressed: () {
+              Provider.of<CartProvider>(context, listen: false)
+                 .tambahItem(productId);
+            },
+          ),
+        ],
+      ),
+    ),
+  ),
+),
 
                 // Total Harga
                 Card(
