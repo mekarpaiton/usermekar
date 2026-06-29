@@ -244,7 +244,10 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List produk = [];
+  List kategori = ['Semua', 'Semen', 'Cat', 'Pipa', 'Besi', 'Keramik']; // ← DIEDIT: Tambah list kategori
+  String kategoriDipilih = 'Semua'; // ← DIEDIT: Tambah state kategori
   bool loading = true;
+  TextEditingController searchController = TextEditingController(); // ← DIEDIT: Tambah controller search
 
   @override
   void initState() {
@@ -252,9 +255,15 @@ class _HomePageState extends State<HomePage> {
     getProduk();
   }
 
-  Future<void> getProduk() async {
+  // ← DIEDIT: Function getProduk diubah total biar support search + kategori
+  Future<void> getProduk({String? search, String? kategori}) async {
+    setState(() => loading = true);
     try {
-      final res = await http.get(Uri.parse('$baseUrl/api/produk'));
+      String url = '$baseUrl/api/produk?';
+      if (search!= null && search.isNotEmpty) url += 'search=$search&';
+      if (kategori!= null && kategori!= 'Semua') url += 'kategori=$kategori';
+
+      final res = await http.get(Uri.parse(url));
       if (res.statusCode == 200) {
         setState(() {
           produk = json.decode(res.body);
@@ -307,64 +316,130 @@ class _HomePageState extends State<HomePage> {
           SizedBox(width: 8),
         ],
       ),
-      body: loading
-        ? const Center(child: CircularProgressIndicator())
-          : produk.isEmpty
-            ? const Center(child: Text('Belum ada produk'))
-              : ListView.builder(
-                  itemCount: produk.length,
-                  itemBuilder: (c, i) {
-                    final p = produk[i];
-                    // Handle harga biar aman mau String JSON atau Map
-                    final hargaData = p['harga'];
-                    final hargaMap = hargaData is String? json.decode(hargaData) : hargaData;
-                    final hargaPertama = hargaMap.values.first;
+      // ← DIEDIT: Body dibungkus Column biar bisa tambah Search + Kategori di atas ListView
+      body: Column(
+        children: [
+          // ← DIEDIT: 1. TAMBAH SEARCH BAR
+          Padding(
+            padding: EdgeInsets.all(8),
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: 'Cari semen, cat, pipa...',
+                prefixIcon: Icon(Icons.search),
+                suffixIcon: searchController.text.isNotEmpty
+                ? IconButton(
+                        icon: Icon(Icons.clear),
+                        onPressed: () {
+                          searchController.clear();
+                          getProduk(kategori: kategoriDipilih);
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onChanged: (value) => getProduk(search: value, kategori: kategoriDipilih),
+            ),
+          ),
 
-                    return Card(
-                      margin: const EdgeInsets.all(8),
-                      child: ListTile(
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            p['gambar'],
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                            errorBuilder: (c, e, s) => Container(
+          // ← DIEDIT: 2. TAMBAH CHIP KATEGORI
+          SizedBox(
+            height: 50,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              itemCount: kategori.length,
+              itemBuilder: (ctx, i) => Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: ChoiceChip(
+                  label: Text(kategori[i]),
+                  selected: kategoriDipilih == kategori[i],
+                  onSelected: (selected) {
+                    setState(() => kategoriDipilih = kategori[i]);
+                    getProduk(search: searchController.text, kategori: kategori[i]);
+                  },
+                  selectedColor: warnaUtama,
+                  labelStyle: TextStyle(
+                    color: kategoriDipilih == kategori[i]? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ← DIEDIT: 3. LIST PRODUK DIBUNGKUS Expanded
+          Expanded(
+            child: loading
+          ? const Center(child: CircularProgressIndicator(color: warnaUtama))
+              : produk.isEmpty
+            ? const Center(child: Text('Produk tidak ditemukan', style: TextStyle(fontSize: 16)))
+                : ListView.builder(
+                    itemCount: produk.length,
+                    itemBuilder: (c, i) {
+                      final p = produk[i];
+                      final hargaData = p['harga'];
+                      final hargaMap = hargaData is String? json.decode(hargaData) : hargaData;
+                      final hargaPertama = hargaMap.values.first;
+                      final stok = p['stok']?? 0; // ← DIEDIT: Tambah stok
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // ← DIEDIT: Margin dikecilin
+                        child: ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              p['foto'], // ← DIEDIT: 'gambar' jadi 'foto' biar sesuai DB
                               width: 50,
                               height: 50,
-                              color: Colors.grey[300],
-                              child: Icon(Icons.image, color: Colors.grey),
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) => Container(
+                                width: 50,
+                                height: 50,
+                                color: Colors.grey[300],
+                                child: Icon(Icons.image, color: Colors.grey),
+                              ),
                             ),
                           ),
+                          title: Text(
+                            p['nama'],
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text('Rp $hargaPertama / ${p['satuan']} | Stok: $stok'), // ← DIEDIT: Tambah stok
+                          trailing: IconButton(
+                            icon: Icon(Icons.add_shopping_cart, color: stok == 0? Colors.grey : warnaUtama), // ← DIEDIT: Disable kalo stok 0
+                            onPressed: stok == 0? null : () { // ← DIEDIT: Disable kalo stok 0
+                              Provider.of<CartProvider>(context, listen: false).addItem(
+                                p['id'].toString(),
+                                p['nama'],
+                                int.parse(hargaPertama.toString()),
+                                p['foto'], // ← DIEDIT: 'gambar' jadi 'foto'
+                              );
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar(); // ← DIEDIT: Biar snackbar nggak numpuk
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${p['nama']} ditambahkan ke keranjang'),
+                                  duration: Duration(seconds: 1),
+                                  backgroundColor: warnaUtama,
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                        title: Text(
-                          p['nama'],
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Text('Rp $hargaPertama / ${p['satuan']}'),
-                        trailing: IconButton(
-                          icon: Icon(Icons.add_shopping_cart, color: warnaUtama),
-                          onPressed: () {
-                            Provider.of<CartProvider>(context, listen: false).addItem(
-                              p['id'].toString(),
-                              p['nama'],
-                              int.parse(hargaPertama.toString()),
-                              p['gambar'],
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${p['nama']} ditambahkan ke keranjang'),
-                                duration: Duration(seconds: 1),
-                                backgroundColor: warnaUtama,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+      // ← DIEDIT: 4. TAMBAH TOMBOL ADMIN PANEL
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (ctx) => HalamanAdmin()));
+        },
+        backgroundColor: Colors.red,
+        icon: Icon(Icons.admin_panel_settings),
+        label: Text('Admin'),
+      ),
     );
   }
 }
