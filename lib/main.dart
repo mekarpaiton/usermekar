@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import 'providers/cart_provider.dart';
 
 const String baseUrl = 'https://abahkhuzai.pythonanywhere.com';
 const String waAdmin = '628123453941';
