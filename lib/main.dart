@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/cart_item.dart';
+import 'pages/halaman_checkout.dart';
 import 'package:badges/badges.dart' as badges;
 
 const String baseUrl = 'https://abahkhuzai.pythonanywhere.com';
@@ -169,7 +171,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     return ScaleTransition(scale: animation, child: child);
                   },
                   child: _isAtCenter
-                     ? AnimatedContainer(
+                    ? AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           transformAlignment: Alignment.center,
                           transform: Matrix4.identity()..scale(_isClicked? 0.85 : 1.0),
@@ -206,9 +208,9 @@ class ShockwavePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
 
     final paint1 = Paint()
-     ..color = const Color(0xff26a69a).withOpacity(1.0 - progress)
-     ..style = PaintingStyle.stroke
-     ..strokeWidth = 4.0 * (1.0 - progress);
+    ..color = const Color(0xff26a69a).withOpacity(1.0 - progress)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 4.0 * (1.0 - progress);
 
     double radius1 = progress * 130;
     canvas.drawCircle(center, radius1, paint1);
@@ -216,9 +218,9 @@ class ShockwavePainter extends CustomPainter {
     if (progress > 0.2) {
       final progress2 = (progress - 0.2) / 0.8;
       final paint2 = Paint()
-       ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
-       ..style = PaintingStyle.stroke
-       ..strokeWidth = 2.5 * (1.0 - progress2);
+      ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5 * (1.0 - progress2);
 
       double radius2 = progress2 * 90;
       canvas.drawCircle(center, radius2, paint2);
@@ -272,92 +274,97 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: Row(
-        children: [
-          Image.asset('assets/images/logomekar.png', height: 35),
-          const SizedBox(width: 10),
-          const Text('TB. MEKAR'),
-        ],
-      ),
-      actions: [
-        Consumer<CartProvider>(
-          builder: (ctx, cart, child) => badges.Badge(
-            showBadge: cart.totalItem > 0,
-            badgeContent: Text(
-              cart.totalItem.toString(),
-              style: TextStyle(color: Colors.white),
-            ),
-            child: IconButton(
-              icon: Icon(Icons.shopping_cart),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (ctx) => HalamanCheckout()),
-                );
-              },
-            ),
-          ),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Image.asset('assets/images/logomekar.png', height: 35),
+            const SizedBox(width: 10),
+            const Text('TB. MEKAR'),
+          ],
         ),
-        IconButton(onPressed: chatAdmin, icon: const Icon(Icons.chat)),
-        SizedBox(width: 8),
-      ],
-    ),
-    body: loading
-       ? const Center(child: CircularProgressIndicator())
-        : produk.isEmpty
-           ? const Center(child: Text('Belum ada produk'))
-            : ListView.builder(
-                itemCount: produk.length,
-                itemBuilder: (c, i) {
-                  final p = produk[i];
-                  final harga = json.decode(p['harga']);
-                  return Card(
-                    margin: const EdgeInsets.all(8),
-                    child: ListTile(
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          p['gambar'],
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => Container(
-                            width: 50,
-                            height: 50,
-                            color: Colors.grey[300],
-                            child: Icon(Icons.image, color: Colors.grey),
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        p['nama'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text('Rp ${harga.values.first} / ${p['satuan']}'),
-                      trailing: IconButton(
-                        icon: Icon(Icons.add_shopping_cart, color: warnaUtama),
-                        onPressed: () {
-                          Provider.of<CartProvider>(context, listen: false).addItem(
-                            p['id'].toString(),
-                            p['nama'],
-                            int.parse(harga.values.first.toString()),
-                            p['gambar'],
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${p['nama']} ditambahkan ke keranjang'),
-                              duration: Duration(seconds: 1),
-                              backgroundColor: warnaUtama,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+        actions: [
+          Consumer<CartProvider>(
+            builder: (ctx, cart, child) => badges.Badge(
+              showBadge: cart.totalItem > 0,
+              badgeContent: Text(
+                cart.totalItem.toString(),
+                style: TextStyle(color: Colors.white),
+              ),
+              child: IconButton(
+                icon: Icon(Icons.shopping_cart),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (ctx) => HalamanCheckout()),
                   );
                 },
               ),
-  );
-} // <- Kurung kurawal penutup build
+            ),
+          ),
+          IconButton(onPressed: chatAdmin, icon: const Icon(Icons.chat)),
+          SizedBox(width: 8),
+        ],
+      ),
+      body: loading
+        ? const Center(child: CircularProgressIndicator())
+          : produk.isEmpty
+            ? const Center(child: Text('Belum ada produk'))
+              : ListView.builder(
+                  itemCount: produk.length,
+                  itemBuilder: (c, i) {
+                    final p = produk[i];
+                    // Handle harga biar aman mau String JSON atau Map
+                    final hargaData = p['harga'];
+                    final hargaMap = hargaData is String? json.decode(hargaData) : hargaData;
+                    final hargaPertama = hargaMap.values.first;
+
+                    return Card(
+                      margin: const EdgeInsets.all(8),
+                      child: ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            p['gambar'],
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => Container(
+                              width: 50,
+                              height: 50,
+                              color: Colors.grey[300],
+                              child: Icon(Icons.image, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          p['nama'],
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text('Rp $hargaPertama / ${p['satuan']}'),
+                        trailing: IconButton(
+                          icon: Icon(Icons.add_shopping_cart, color: warnaUtama),
+                          onPressed: () {
+                            Provider.of<CartProvider>(context, listen: false).addItem(
+                              p['id'].toString(),
+                              p['nama'],
+                              int.parse(hargaPertama.toString()),
+                              p['gambar'],
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${p['nama']} ditambahkan ke keranjang'),
+                                duration: Duration(seconds: 1),
+                                backgroundColor: warnaUtama,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+}
