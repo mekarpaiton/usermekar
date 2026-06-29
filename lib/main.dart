@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
+import 'package:badges/badges.dart' as badges;
 
 const String baseUrl = 'https://abahkhuzai.pythonanywhere.com';
 const String waAdmin = '628123453941';
