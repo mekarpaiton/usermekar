@@ -101,7 +101,7 @@ class HalamanCheckout extends StatelessWidget {
                     onPressed: cart.items.isEmpty? null : () async { // ← Tambahin async
   String pesan = "Halo TB. MEKAR, saya mau pesan:\n\n";
   cart.items.forEach((key, item) {
-    pesan += "${item.nama} (${item.qty}x) - Rp ${item.harga * item.qty}\n";
+   pesan += "${item.nama} (${item.jumlah}x) - Rp ${item.harga * item.jumlah}\n";
   });
   pesan += "\nTotal: Rp ${cart.totalHarga}";
 
