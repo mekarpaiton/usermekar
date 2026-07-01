@@ -7,6 +7,7 @@ import 'providers/cart_provider.dart';
 import 'providers/cart_item.dart';
 import 'pages/halaman_checkout.dart';
 import 'package:badges/badges.dart' as badges;
+import 'config.dart';
 
 const String baseUrl = 'https://abahkhuzai.pythonanywhere.com';
 const String waAdmin = '628123453941';
