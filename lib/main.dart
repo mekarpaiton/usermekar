@@ -9,8 +9,7 @@ import 'pages/halaman_checkout.dart';
 import 'package:badges/badges.dart' as badges;
 import 'config.dart';
 
-const String baseUrl = 'https://abahkhuzai.pythonanywhere.com';
-const String waAdmin = '628123453941';
+
 const Color warnaUtama = Color(0xFF7F00FF); // UNGU
 
 void main() {
