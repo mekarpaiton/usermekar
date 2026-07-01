@@ -134,7 +134,7 @@ class HalamanCheckout extends StatelessWidget {
                       pesan += "\nTotal: Rp ${cart.totalHarga}";
 
                       final encodedPesan = Uri.encodeComponent(pesan);
-                      final waUrl = Uri.parse('https://wa.me/6281234567890?text=$encodedPesan'); // Ganti nomor kamu
+                      final waUrl = Uri.parse('https://wa.me/$waAdmin?text=$encodedPesan');
 
                       if (await canLaunchUrl(waUrl)) {
                         await launchUrl(waUrl, mode: LaunchMode.externalApplication);
