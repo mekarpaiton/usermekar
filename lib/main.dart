@@ -244,10 +244,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List produk = [];
-  List kategori = ['Semua', 'Semen', 'Cat', 'Pipa', 'Besi', 'Keramik']; // ← DIEDIT: Tambah list kategori
-  String kategoriDipilih = 'Semua'; // ← DIEDIT: Tambah state kategori
+  List kategori = ['Semua', 'Semen', 'Cat', 'Pipa', 'Besi', 'Keramik', 'Lainnya'];
+  String kategoriDipilih = 'Semua';
   bool loading = true;
-  TextEditingController searchController = TextEditingController(); // ← DIEDIT: Tambah controller search
+  String errorMsg = ''; // <-- TAMBAH INI
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
@@ -255,23 +256,32 @@ class _HomePageState extends State<HomePage> {
     getProduk();
   }
 
-  // ← DIEDIT: Function getProduk diubah total biar support search + kategori
+  // ← FIX ANTI 500 + ANTI HTML
   Future<void> getProduk({String? search, String? kategori}) async {
-    setState(() => loading = true);
+    if (mounted) setState(() { loading = true; errorMsg = ''; });
     try {
       String url = '$baseUrl/api/produk?';
       if (search!= null && search.isNotEmpty) url += 'search=$search&';
       if (kategori!= null && kategori!= 'Semua') url += 'kategori=$kategori';
 
-      final res = await http.get(Uri.parse(url));
-      if (res.statusCode == 200) {
-        setState(() {
-          produk = json.decode(res.body);
-          loading = false;
-        });
-      }
+      final res = await http.get(Uri.parse(url)).timeout(Duration(seconds: 15));
+      if (!mounted) return;
+
+      // <-- FIX: CEK STATUS + CONTENT-TYPE
+      if (res.statusCode!= 200) throw Exception('Server error ${res.statusCode}');
+      if (!res.headers['content-type']!.contains('application/json')) throw Exception('Response bukan JSON');
+
+      setState(() {
+        produk = json.decode(res.body);
+        loading = false;
+      });
     } catch (e) {
-      setState(() => loading = false);
+      print("KATALOG USER ERROR: $e");
+      if (!mounted) return;
+      setState(() {
+        loading = false;
+        errorMsg = 'Gagal ambil produk. Cek koneksi internet';
+      });
     }
   }
 
@@ -316,10 +326,8 @@ class _HomePageState extends State<HomePage> {
           SizedBox(width: 8),
         ],
       ),
-      // ← DIEDIT: Body dibungkus Column biar bisa tambah Search + Kategori di atas ListView
       body: Column(
         children: [
-          // ← DIEDIT: 1. TAMBAH SEARCH BAR
           Padding(
             padding: EdgeInsets.all(8),
             child: TextField(
@@ -328,7 +336,7 @@ class _HomePageState extends State<HomePage> {
                 hintText: 'Cari semen, cat, pipa...',
                 prefixIcon: Icon(Icons.search),
                 suffixIcon: searchController.text.isNotEmpty
-                ? IconButton(
+               ? IconButton(
                         icon: Icon(Icons.clear),
                         onPressed: () {
                           searchController.clear();
@@ -341,8 +349,6 @@ class _HomePageState extends State<HomePage> {
               onChanged: (value) => getProduk(search: value, kategori: kategoriDipilih),
             ),
           ),
-
-          // ← DIEDIT: 2. TAMBAH CHIP KATEGORI
           SizedBox(
             height: 50,
             child: ListView.builder(
@@ -366,72 +372,87 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-
-          // ← DIEDIT: 3. LIST PRODUK DIBUNGKUS Expanded
           Expanded(
             child: loading
-          ? const Center(child: CircularProgressIndicator(color: warnaUtama))
-              : produk.isEmpty
-            ? const Center(child: Text('Produk tidak ditemukan', style: TextStyle(fontSize: 16)))
-                : ListView.builder(
-                    itemCount: produk.length,
-                    itemBuilder: (c, i) {
-                      final p = produk[i];
-                      final hargaData = p['harga'];
-                      final hargaMap = hargaData is String? json.decode(hargaData) : hargaData;
-                      final hargaPertama = hargaMap.values.first;
-                      final stok = p['stok']?? 0; // ← DIEDIT: Tambah stok
+           ? const Center(child: CircularProgressIndicator(color: warnaUtama))
+              // <-- FIX: TAMPILIN ERROR KALO SERVER MATI
+              : errorMsg.isNotEmpty
+              ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.wifi_off, size: 64, color: Colors.red),
+                    SizedBox(height: 16),
+                    Text(errorMsg, textAlign: TextAlign.center),
+                    SizedBox(height: 16),
+                    ElevatedButton(onPressed: () => getProduk(), child: Text('Coba Lagi'))
+                  ]))
+                  : produk.isEmpty
+                  ? const Center(child: Text('Produk tidak ditemukan', style: TextStyle(fontSize: 16)))
+                      : RefreshIndicator(
+                          onRefresh: () => getProduk(search: searchController.text, kategori: kategoriDipilih),
+                          child: ListView.builder(
+                            itemCount: produk.length,
+                            itemBuilder: (c, i) {
+                              final p = produk[i];
+                              final hargaData = p['harga'];
+                              // <-- FIX: ANTI CRASH JSON
+                              Map hargaMap = {};
+                              try {
+                                hargaMap = hargaData is String? json.decode(hargaData) : hargaData;
+                              } catch (e) {
+                                hargaMap = {};
+                              }
+                              final hargaPertama = hargaMap.values.isNotEmpty? hargaMap.values.first : 0;
+                              final stok = p['stok']?? 0;
 
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // ← DIEDIT: Margin dikecilin
-                        child: ListTile(
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              p['foto'], // ← DIEDIT: 'gambar' jadi 'foto' biar sesuai DB
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                              errorBuilder: (c, e, s) => Container(
-                                width: 50,
-                                height: 50,
-                                color: Colors.grey[300],
-                                child: Icon(Icons.image, color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            p['nama'],
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text('Rp $hargaPertama / ${p['satuan']} | Stok: $stok'), // ← DIEDIT: Tambah stok
-                          trailing: IconButton(
-                            icon: Icon(Icons.add_shopping_cart, color: stok == 0? Colors.grey : warnaUtama), // ← DIEDIT: Disable kalo stok 0
-                            onPressed: stok == 0? null : () { // ← DIEDIT: Disable kalo stok 0
-                              Provider.of<CartProvider>(context, listen: false).addItem(
-                                p['id'].toString(),
-                                p['nama'],
-                                int.parse(hargaPertama.toString()),
-                                p['foto'], // ← DIEDIT: 'gambar' jadi 'foto'
-                              );
-                              ScaffoldMessenger.of(context).hideCurrentSnackBar(); // ← DIEDIT: Biar snackbar nggak numpuk
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${p['nama']} ditambahkan ke keranjang'),
-                                  duration: Duration(seconds: 1),
-                                  backgroundColor: warnaUtama,
+                              return Card(
+                                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                child: ListTile(
+                                  leading: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      p['foto']?? '',
+                                      width: 50,
+                                      height: 50,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) => Container(
+                                        width: 50,
+                                        height: 50,
+                                        color: Colors.grey[300],
+                                        child: Icon(Icons.image, color: Colors.grey),
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    p['nama']?? '',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Text('Rp $hargaPertama / ${p['satuan']?? ''} | Stok: $stok'),
+                                  trailing: IconButton(
+                                    icon: Icon(Icons.add_shopping_cart, color: stok == 0? Colors.grey : warnaUtama),
+                                    onPressed: stok == 0? null : () {
+                                      Provider.of<CartProvider>(context, listen: false).addItem(
+                                        p['id'].toString(),
+                                        p['nama'],
+                                        int.tryParse(hargaPertama.toString())?? 0,
+                                        p['foto']?? '',
+                                      );
+                                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('${p['nama']} ditambahkan ke keranjang'),
+                                          duration: Duration(seconds: 1),
+                                          backgroundColor: warnaUtama,
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               );
                             },
                           ),
                         ),
-                      );
-                    },
-                  ),
           ),
         ],
       ),
-      
     );
   }
 }
