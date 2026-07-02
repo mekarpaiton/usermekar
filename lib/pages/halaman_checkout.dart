@@ -15,6 +15,8 @@ class HalamanCheckout extends StatefulWidget {
 
 class _HalamanCheckoutState extends State<HalamanCheckout> {
   bool loading = false;
+  final namaCtrl = TextEditingController();
+  final waCtrl = TextEditingController();
 
   Future<void> kirimOrder(CartProvider cart) async {
     if (cart.items.isEmpty) return;
@@ -25,9 +27,13 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
       pesan += "${item.nama} (${item.jumlah}x) - Rp ${item.harga * item.jumlah}\n";
     });
     pesan += "\nTotal: Rp ${cart.totalHarga}";
+    if (namaCtrl.text.isNotEmpty) {
+      pesan += "\nNama: ${namaCtrl.text}";
+    }
 
     final encodedPesan = Uri.encodeComponent(pesan);
-    final waUrl = Uri.parse('https://wa.me/$waAdmin?text=$encodedPesan');
+    // PAKAI api.whatsapp.com, bukan wa.me
+    final waUrl = Uri.parse('https://api.whatsapp.com/send?phone=$waAdmin&text=$encodedPesan');
 
     setState(() => loading = true);
 
@@ -37,19 +43,19 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
         Uri.parse('$baseUrl/api/order'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
+          'nama': namaCtrl.text.isEmpty? 'Pelanggan' : namaCtrl.text,
+          'wa': waCtrl.text,
           'items': cart.items.values.map((e) => {
             'id': e.id,
             'nama': e.nama,
             'harga': e.harga,
-            'jumlah': e.jumlah,
+            'qty': e.jumlah, // Panel bacanya qty, bukan jumlah
           }).toList(),
           'total': cart.totalHarga,
-          'tanggal': DateTime.now().toIso8601String(),
-          'via': 'whatsapp',
         }),
       ).timeout(const Duration(seconds: 15));
 
-      if (res.statusCode != 200 && res.statusCode != 201) {
+      if (res.statusCode!= 200 && res.statusCode!= 201) {
         throw Exception('Panel error ${res.statusCode}');
       }
 
@@ -57,15 +63,15 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
       if (await canLaunchUrl(waUrl)) {
         await launchUrl(waUrl, mode: LaunchMode.externalApplication);
         cart.clear();
-        if (mounted) Navigator.pop(context);
+        if (mounted) Navigator.popUntil(context, (route) => route.isFirst);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal kirim ke Panel: $e, tetap buka WA...')),
+          SnackBar(content: Text('Gagal kirim ke Panel: $e')),
         );
       }
-      // Fallback: tetap buka WA biar order nggak hilang
+      // Fallback: tetap buka WA
       if (await canLaunchUrl(waUrl)) {
         await launchUrl(waUrl, mode: LaunchMode.externalApplication);
       }
@@ -75,16 +81,23 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
   }
 
   @override
+  void dispose() {
+    namaCtrl.dispose();
+    waCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Keranjang Belanja'),
-        backgroundColor: Colors.orange,
+        backgroundColor: const Color(0xFF7F00FF),
       ),
       body: cart.items.isEmpty
-          ? Center(
+         ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
@@ -98,9 +111,37 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
             )
           : Column(
               children: [
-                // List Barang di Keranjang
+                // Form Nama / WA
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: namaCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Nama Anda',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: waCtrl,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(
+                          labelText: 'No. WA',
+                          hintText: '62812...',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.phone),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // List Barang
                 Expanded(
                   child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 10),
                     itemCount: cart.items.length,
                     itemBuilder: (ctx, i) {
                       final item = cart.items.values.toList()[i];
@@ -116,7 +157,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
                         ),
                         onDismissed: (direction) {
                           Provider.of<CartProvider>(context, listen: false)
-                              .removeItem(productId);
+                             .removeItem(productId);
                         },
                         child: Card(
                           margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
@@ -144,7 +185,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
                                     icon: const Icon(Icons.remove_circle, color: Colors.red),
                                     onPressed: () {
                                       Provider.of<CartProvider>(context, listen: false)
-                                          .kurangItem(productId);
+                                         .kurangItem(productId);
                                     },
                                   ),
                                   Text(
@@ -155,7 +196,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
                                     icon: const Icon(Icons.add_circle, color: Colors.green),
                                     onPressed: () {
                                       Provider.of<CartProvider>(context, listen: false)
-                                          .tambahItem(productId);
+                                         .tambahItem(productId);
                                     },
                                   ),
                                 ],
@@ -167,8 +208,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
                     },
                   ),
                 ),
-
-                // Total Harga
+                // Total
                 Card(
                   margin: const EdgeInsets.all(15),
                   child: Padding(
@@ -182,27 +222,26 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.orange,
+                            color: Color(0xFF7F00FF),
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-
-                // Tombol Checkout WA
+                // Tombol Checkout
                 Container(
                   width: double.infinity,
                   margin: const EdgeInsets.fromLTRB(15, 0, 15, 15),
                   child: ElevatedButton.icon(
-                    icon: loading 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    icon: loading
+                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.chat),
                     label: Text(
-                      loading ? 'Mengirim...' : 'Checkout via WhatsApp',
+                      loading? 'Mengirim...' : 'Checkout via WhatsApp',
                       style: const TextStyle(fontSize: 18),
                     ),
-                    onPressed: cart.items.isEmpty || loading ? null : () => kirimOrder(cart),
+                    onPressed: cart.items.isEmpty || loading? null : () => kirimOrder(cart),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
