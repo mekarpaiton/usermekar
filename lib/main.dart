@@ -8,6 +8,7 @@ import 'providers/cart_item.dart';
 import 'pages/halaman_checkout.dart';
 import 'package:badges/badges.dart' as badges;
 import 'config.dart';
+import 'pages/cek_order_page.dart';
 
 
 const Color warnaUtama = Color(0xFF7F00FF); // UNGU
@@ -304,6 +305,15 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         actions: [
+IconButton(
+  icon: const Icon(Icons.receipt_long),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CekOrderPage()),
+    );
+  },
+),
           Consumer<CartProvider>(
             builder: (ctx, cart, child) => badges.Badge(
               showBadge: cart.totalItem > 0,
