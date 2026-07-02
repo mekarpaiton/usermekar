@@ -88076,7 +88076,7 @@ case 2:return A.I(o.at(-1),r)}})
 return A.K($async$lJ,r)},
 tK(){var s=0,r=A.L(t.H),q
 var $async$tK=A.M(function(a,b){if(a===1)return A.I(b,r)
-for(;;)switch(s){case 0:q=A.eG("https://wa.me/6282141518405?text=Halo TB. MEKAR, saya mau tanya produk",0,null)
+for(;;)switch(s){case 0:q=A.eG("https://wa.me/628123453941?text=Halo TB. MEKAR, saya mau tanya produk",0,null)
 s=4
 return A.N(A.Yj(q),$async$tK)
 case 4:s=b?2:3
@@ -88281,7 +88281,7 @@ a1.gmK().ak(0,new A.alO(a))
 i=a.a=a.a+("\nTotal: Rp "+a1.gJL())
 h=m.e
 g=h.a.a
-l=A.eG("https://api.whatsapp.com/send?phone=6282141518405&text="+A.Gl(2,g.length!==0?a.a=i+("\nNama: "+g):i,B.a0,!1),0,null)
+l=A.eG("https://api.whatsapp.com/send?phone=628123453941&text="+A.Gl(2,g.length!==0?a.a=i+("\nNama: "+g):i,B.a0,!1),0,null)
 m.ac(new A.alP(m))
 p=4
 a=A.eG("https://abahkhuzai.pythonanywhere.com/api/order",0,null)
