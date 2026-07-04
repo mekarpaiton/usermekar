@@ -8,6 +8,7 @@ import 'pages/halaman_checkout.dart';
 import 'package:badges/badges.dart' as badges;
 import 'config.dart';
 import 'pages/cek_order_page.dart';
+import 'pages/detail_produk_page.dart';
 
 const Color warnaUtama = Color(0xFF7F00FF);
 
