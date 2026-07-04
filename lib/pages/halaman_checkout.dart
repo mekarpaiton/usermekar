@@ -51,23 +51,7 @@ void kirimWhatsApp(String pesan) async {
     final webUrl = Uri.parse(AppConfig.linkWaPesan(pesan));
     await launchUrl(webUrl, mode: LaunchMode.externalApplication);
   }
-}
-
-    String pesan = 'Halo ${AppConfig.namaToko}, saya mau pesan:\n\n';
-    pesan += 'Nama: ${namaCtrl.text}\n';
-    pesan += 'HP: ${hpCtrl.text}\n';
-    pesan += 'Alamat: ${alamatCtrl.text}\n\n';
-    pesan += 'Pesanan:\n';
-
-    for (var item in cart.items.values) {
-      pesan += '- ${item.nama} ${item.varian != 'umum' ? '(${item.varian})' : ''} x${item.qty} = Rp ${item.harga * item.qty}\n';
-    }
-    pesan += '\nTotal: Rp ${cart.totalHarga}';
-    pesan += '\n\nMohon diproses ya 🙏';
-
-    final waUrl = Uri.parse(AppConfig.linkWaPesan(pesan));
-    launchUrl(waUrl, mode: LaunchMode.externalApplication);
-  }
+}   
 
   Future<void> simpanOrder() async {
     if (namaCtrl.text.isEmpty || hpCtrl.text.isEmpty || alamatCtrl.text.isEmpty) {
