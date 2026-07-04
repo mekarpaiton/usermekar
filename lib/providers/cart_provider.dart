@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'cart_item.dart'; // ← UDAH BENER INI
+import 'cart_item.dart';
 
 class CartProvider with ChangeNotifier {
   Map<String, CartItem> _items = {};
@@ -14,43 +14,54 @@ class CartProvider with ChangeNotifier {
   int get totalItem => _items.values.fold(0, (sum, item) => sum + item.jumlah);
   int get totalHarga => _items.values.fold(0, (sum, item) => sum + (item.harga * item.jumlah));
 
-  void addItem(String id, String nama, int harga, String gambar) {
-    if (_items.containsKey(id)) {
-      _items.update(id, (item) => CartItem(
+  void addItem(String id, String nama, int harga, String gambar, {
+    required String varian,
+    required int hargaNormal,
+    required int isPromo,
+  }) {
+    final key = '$id-$varian'; // varian beda = item beda di cart
+    if (_items.containsKey(key)) {
+      _items.update(key, (item) => CartItem(
         id: item.id, nama: item.nama, harga: item.harga,
-        gambar: item.gambar, jumlah: item.jumlah + 1,
+        hargaNormal: item.hargaNormal, isPromo: item.isPromo,
+        varian: item.varian, gambar: item.gambar, jumlah: item.jumlah + 1,
       ));
     } else {
-      _items.putIfAbsent(id, () => CartItem(id: id, nama: nama, harga: harga, gambar: gambar));
+      _items.putIfAbsent(key, () => CartItem(
+        id: id, nama: nama, harga: harga, hargaNormal: hargaNormal,
+        isPromo: isPromo, varian: varian, gambar: gambar,
+      ));
     }
     notifyListeners();
     saveCart();
   }
 
-  void removeItem(String id) {
-    _items.remove(id);
+  void removeItem(String key) {
+    _items.remove(key);
     notifyListeners();
     saveCart();
   }
 
-  void kurangItem(String id) {
-    if (!_items.containsKey(id)) return;
-    if (_items[id]!.jumlah > 1) {
-      _items.update(id, (item) => CartItem(
+  void kurangItem(String key) {
+    if (!_items.containsKey(key)) return;
+    if (_items[key]!.jumlah > 1) {
+      _items.update(key, (item) => CartItem(
         id: item.id, nama: item.nama, harga: item.harga,
-        gambar: item.gambar, jumlah: item.jumlah - 1,
+        hargaNormal: item.hargaNormal, isPromo: item.isPromo,
+        varian: item.varian, gambar: item.gambar, jumlah: item.jumlah - 1,
       ));
     } else {
-      _items.remove(id);
+      _items.remove(key);
     }
     notifyListeners();
     saveCart();
   }
 
-  void tambahItem(String id) {
-    _items.update(id, (item) => CartItem(
+  void tambahItem(String key) {
+    _items.update(key, (item) => CartItem(
       id: item.id, nama: item.nama, harga: item.harga,
-      gambar: item.gambar, jumlah: item.jumlah + 1,
+      hargaNormal: item.hargaNormal, isPromo: item.isPromo,
+      varian: item.varian, gambar: item.gambar, jumlah: item.jumlah + 1,
     ));
     notifyListeners();
     saveCart();
@@ -79,8 +90,11 @@ class CartProvider with ChangeNotifier {
       loadedCart[key] = CartItem(
         id: itemData['id'],
         nama: itemData['nama'],
-        jumlah: itemData['jumlah'],
+        jumlah: itemData['qty']?? itemData['jumlah']?? 1,
         harga: itemData['harga'],
+        hargaNormal: itemData['harga_normal']?? itemData['harga'],
+        isPromo: itemData['is_promo']?? 0,
+        varian: itemData['varian']?? 'umum',
         gambar: itemData['gambar'],
       );
     });
