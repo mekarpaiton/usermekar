@@ -11,20 +11,20 @@ class CartProvider with ChangeNotifier {
   }
 
   Map<String, CartItem> get items => {..._items};
-  int get totalItem => _items.values.fold(0, (sum, item) => sum + item.jumlah);
-  int get totalHarga => _items.values.fold(0, (sum, item) => sum + (item.harga * item.jumlah));
+  int get totalItem => _items.values.fold(0, (sum, item) => sum + item.qty); // <-- qty
+  int get totalHarga => _items.values.fold(0, (sum, item) => sum + (item.harga * item.qty)); // <-- qty
 
   void addItem(String id, String nama, int harga, String gambar, {
     required String varian,
     required int hargaNormal,
     required int isPromo,
   }) {
-    final key = '$id-$varian'; // varian beda = item beda di cart
+    final key = '$id-$varian';
     if (_items.containsKey(key)) {
       _items.update(key, (item) => CartItem(
         id: item.id, nama: item.nama, harga: item.harga,
         hargaNormal: item.hargaNormal, isPromo: item.isPromo,
-        varian: item.varian, gambar: item.gambar, jumlah: item.jumlah + 1,
+        varian: item.varian, gambar: item.gambar, qty: item.qty + 1, // <-- qty
       ));
     } else {
       _items.putIfAbsent(key, () => CartItem(
@@ -44,11 +44,11 @@ class CartProvider with ChangeNotifier {
 
   void kurangItem(String key) {
     if (!_items.containsKey(key)) return;
-    if (_items[key]!.jumlah > 1) {
+    if (_items[key]!.qty > 1) { // <-- qty
       _items.update(key, (item) => CartItem(
         id: item.id, nama: item.nama, harga: item.harga,
         hargaNormal: item.hargaNormal, isPromo: item.isPromo,
-        varian: item.varian, gambar: item.gambar, jumlah: item.jumlah - 1,
+        varian: item.varian, gambar: item.gambar, qty: item.qty - 1, // <-- qty
       ));
     } else {
       _items.remove(key);
@@ -61,7 +61,7 @@ class CartProvider with ChangeNotifier {
     _items.update(key, (item) => CartItem(
       id: item.id, nama: item.nama, harga: item.harga,
       hargaNormal: item.hargaNormal, isPromo: item.isPromo,
-      varian: item.varian, gambar: item.gambar, jumlah: item.jumlah + 1,
+      varian: item.varian, gambar: item.gambar, qty: item.qty + 1, // <-- qty
     ));
     notifyListeners();
     saveCart();
@@ -90,7 +90,7 @@ class CartProvider with ChangeNotifier {
       loadedCart[key] = CartItem(
         id: itemData['id'],
         nama: itemData['nama'],
-        jumlah: itemData['qty']?? itemData['jumlah']?? 1,
+        qty: itemData['qty']?? 1, // <-- qty
         harga: itemData['harga'],
         hargaNormal: itemData['harga_normal']?? itemData['harga'],
         isPromo: itemData['is_promo']?? 0,
