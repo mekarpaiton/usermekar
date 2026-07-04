@@ -19,13 +19,39 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
   bool loading = false;
 
   void kirimWA() {
-    final cart = Provider.of<CartProvider>(context, listen: false);
-    if (cart.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Keranjang masih kosong'), backgroundColor: Colors.red),
-      );
-      return;
-    }
+  final cart = Provider.of<CartProvider>(context, listen: false);
+  if (cart.items.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Keranjang masih kosong'), backgroundColor: Colors.red),
+    );
+    return;
+  }
+
+  String pesan = 'Halo ${AppConfig.namaToko}, saya mau pesan:\n\n';
+  pesan += 'Nama: ${namaCtrl.text}\n';
+  pesan += 'HP: ${hpCtrl.text}\n';
+  pesan += 'Alamat: ${alamatCtrl.text}\n\n';
+  pesan += 'Pesanan:\n';
+
+  for (var item in cart.items.values) {
+    pesan += '- ${item.nama} ${item.varian != 'umum' ? '(${item.varian})' : ''} x${item.qty} = Rp ${item.harga * item.qty}\n';
+  }
+  pesan += '\nTotal: Rp ${cart.totalHarga}';
+  pesan += '\n\nMohon diproses ya 🙏';
+
+  kirimWhatsApp(pesan);
+}
+
+void kirimWhatsApp(String pesan) async {
+  final waUrl = Uri.parse(AppConfig.linkWaApp(pesan)); // <-- PAKE YANG BARU
+  
+  if (await canLaunchUrl(waUrl)) {
+    await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+  } else {
+    final webUrl = Uri.parse(AppConfig.linkWaPesan(pesan));
+    await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+  }
+}
 
     String pesan = 'Halo ${AppConfig.namaToko}, saya mau pesan:\n\n';
     pesan += 'Nama: ${namaCtrl.text}\n';
