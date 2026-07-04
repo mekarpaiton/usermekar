@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
-import '../config.dart'; // ← IMPORT CONFIG
+import '../config.dart';
 
 class HalamanCheckout extends StatefulWidget {
   const HalamanCheckout({super.key});
@@ -27,20 +27,19 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
       return;
     }
 
-    String pesan = 'Halo ${AppConfig.namaToko}, saya mau pesan:\n\n'; // ← PAKE CONFIG
+    String pesan = 'Halo ${AppConfig.namaToko}, saya mau pesan:\n\n';
     pesan += 'Nama: ${namaCtrl.text}\n';
     pesan += 'HP: ${hpCtrl.text}\n';
     pesan += 'Alamat: ${alamatCtrl.text}\n\n';
     pesan += 'Pesanan:\n';
-    
+
     for (var item in cart.items.values) {
-      pesan += '- ${item.nama} x${item.qty} = Rp ${item.harga * item.qty}\n';
+      pesan += '- ${item.nama} ${item.varian != 'umum' ? '(${item.varian})' : ''} x${item.qty} = Rp ${item.harga * item.qty}\n';
     }
     pesan += '\nTotal: Rp ${cart.totalHarga}';
     pesan += '\n\nMohon diproses ya 🙏';
 
-    final waUrl = Uri.parse(AppConfig.linkWaPesan(pesan)); // ← PAKE HELPER CONFIG
-    
+    final waUrl = Uri.parse(AppConfig.linkWaPesan(pesan));
     launchUrl(waUrl, mode: LaunchMode.externalApplication);
   }
 
@@ -54,24 +53,26 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
 
     setState(() => loading = true);
     final cart = Provider.of<CartProvider>(context, listen: false);
-    
+
     try {
       final res = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/order'), // ← PAKE CONFIG
+        Uri.parse('${AppConfig.baseUrl}/api/order'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'nama_pembeli': namaCtrl.text,
-          'wa_pembeli': hpCtrl.text,
+          'nama': namaCtrl.text,
+          'wa': hpCtrl.text,
           'alamat': alamatCtrl.text,
           'items': cart.items.values.map((e) => {
             'id': e.id,
             'nama': e.nama,
             'harga': e.harga,
+            'harga_normal': e.hargaNormal,
+            'is_promo': e.isPromo,
+            'varian': e.varian,
             'qty': e.qty,
-            'foto': e.foto,
+            'gambar': e.gambar, // <-- gambar
           }).toList(),
           'total': cart.totalHarga,
-          'status': 'Baru',
         }),
       ).timeout(const Duration(seconds: 15));
 
@@ -99,14 +100,14 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Checkout'),
         backgroundColor: const Color(0xFF7F00FF),
       ),
       body: cart.items.isEmpty
-          ? const Center(child: Text('Keranjang kosong'))
+         ? const Center(child: Text('Keranjang kosong'))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -144,11 +145,24 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
                 ...cart.items.values.map((item) => ListTile(
                   leading: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(item.foto, width: 50, height: 50, fit: BoxFit.cover),
+                    child: Image.network(item.gambar, width: 50, height: 50, fit: BoxFit.cover), // <-- gambar
                   ),
-                  title: Text(item.nama),
-                  subtitle: Text('Rp ${item.harga} x ${item.qty}'),
-                  trailing: Text('Rp ${item.harga * item.qty}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text('${item.nama} ${item.varian != 'umum' ? '(${item.varian})' : ''}'),
+                  subtitle: item.isPromo == 1 ? Text(
+                    'Rp ${item.hargaNormal}',
+                    style: const TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey, fontSize: 12),
+                  ) : null,
+                  trailing: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('x${item.qty}'),
+                      Text('Rp ${item.harga * item.qty}', style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: item.isPromo == 1 ? Colors.red : Colors.black,
+                      )),
+                    ],
+                  ),
                 )),
                 const Divider(),
                 ListTile(
