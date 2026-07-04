@@ -5,8 +5,8 @@ class CartItem {
   final int hargaNormal;
   final int isPromo;
   final String varian;
-  final String gambar;
-  int qty; // <-- ganti dari jumlah jadi qty
+  final String gambar; // <-- PAKAI gambar BUKAN foto
+  int qty;
 
   CartItem({
     required this.id,
@@ -15,8 +15,8 @@ class CartItem {
     required this.hargaNormal,
     required this.isPromo,
     required this.varian,
-    required this.gambar,
-    this.qty = 1, // <-- ganti dari jumlah
+    required this.gambar, // <-- gambar
+    this.qty = 1,
   });
 
   Map<String, dynamic> toJson() => {
@@ -26,7 +26,7 @@ class CartItem {
     'harga_normal': hargaNormal,
     'is_promo': isPromo,
     'varian': varian,
-    'gambar': gambar,
+    'gambar': gambar, // <-- gambar
     'qty': qty,
   };
 }
