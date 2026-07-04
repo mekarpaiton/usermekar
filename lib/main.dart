@@ -7,9 +7,8 @@ import 'providers/cart_provider.dart';
 import 'providers/cart_item.dart';
 import 'pages/halaman_checkout.dart';
 import 'package:badges/badges.dart' as badges;
-import 'config.dart';
+import 'config.dart'; // ← IMPORT CONFIG
 import 'pages/cek_order_page.dart';
-
 
 const Color warnaUtama = Color(0xFF7F00FF); // UNGU
 
@@ -25,7 +24,7 @@ class TBMekarApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (ctx) => CartProvider(),
       child: MaterialApp(
-        title: 'TB. MEKAR',
+        title: AppConfig.namaToko, // ← PAKE CONFIG
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           primarySwatch: Colors.deepPurple,
@@ -131,9 +130,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'TB. MEKAR',
-          style: TextStyle(
+        title: Text(
+          AppConfig.namaToko, // ← PAKE CONFIG
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w500,
             fontSize: 20,
@@ -172,7 +171,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     return ScaleTransition(scale: animation, child: child);
                   },
                   child: _isAtCenter
-                    ? AnimatedContainer(
+                   ? AnimatedContainer(
                           duration: const Duration(milliseconds: 150),
                           transformAlignment: Alignment.center,
                           transform: Matrix4.identity()..scale(_isClicked? 0.85 : 1.0),
@@ -209,9 +208,9 @@ class ShockwavePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
 
     final paint1 = Paint()
-    ..color = const Color(0xff26a69a).withOpacity(1.0 - progress)
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 4.0 * (1.0 - progress);
+   ..color = const Color(0xff26a69a).withOpacity(1.0 - progress)
+   ..style = PaintingStyle.stroke
+   ..strokeWidth = 4.0 * (1.0 - progress);
 
     double radius1 = progress * 130;
     canvas.drawCircle(center, radius1, paint1);
@@ -219,9 +218,9 @@ class ShockwavePainter extends CustomPainter {
     if (progress > 0.2) {
       final progress2 = (progress - 0.2) / 0.8;
       final paint2 = Paint()
-      ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5 * (1.0 - progress2);
+     ..color = Colors.cyanAccent.withOpacity(1.0 - progress2)
+     ..style = PaintingStyle.stroke
+     ..strokeWidth = 2.5 * (1.0 - progress2);
 
       double radius2 = progress2 * 90;
       canvas.drawCircle(center, radius2, paint2);
@@ -248,7 +247,7 @@ class _HomePageState extends State<HomePage> {
   List kategori = ['Semua', 'Semen', 'Cat', 'Pipa', 'Besi', 'Keramik', 'Lainnya'];
   String kategoriDipilih = 'Semua';
   bool loading = true;
-  String errorMsg = ''; // <-- TAMBAH INI
+  String errorMsg = '';
   TextEditingController searchController = TextEditingController();
 
   @override
@@ -257,18 +256,16 @@ class _HomePageState extends State<HomePage> {
     getProduk();
   }
 
-  // ← FIX ANTI 500 + ANTI HTML
   Future<void> getProduk({String? search, String? kategori}) async {
     if (mounted) setState(() { loading = true; errorMsg = ''; });
     try {
-      String url = '$baseUrl/api/produk?';
+      String url = '${AppConfig.baseUrl}/api/produk?'; // ← GANTI PAKE CONFIG
       if (search!= null && search.isNotEmpty) url += 'search=$search&';
       if (kategori!= null && kategori!= 'Semua') url += 'kategori=$kategori';
 
-      final res = await http.get(Uri.parse(url)).timeout(Duration(seconds: 15));
+      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
       if (!mounted) return;
 
-      // <-- FIX: CEK STATUS + CONTENT-TYPE
       if (res.statusCode!= 200) throw Exception('Server error ${res.statusCode}');
       if (!res.headers['content-type']!.contains('application/json')) throw Exception('Response bukan JSON');
 
@@ -287,7 +284,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void chatAdmin() async {
-    final url = Uri.parse('https://wa.me/$waAdmin?text=Halo TB. MEKAR, saya mau tanya produk');
+    final url = Uri.parse(AppConfig.linkWaPesan('Halo ${AppConfig.namaToko}, saya mau tanya produk')); // ← PAKE CONFIG
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }
@@ -301,7 +298,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             Image.asset('assets/images/logomekar.png', height: 35),
             const SizedBox(width: 10),
-            const Text('TB. MEKAR'),
+            Text(AppConfig.namaToko), // ← PAKE CONFIG
           ],
         ),
         actions: [
@@ -319,35 +316,35 @@ IconButton(
               showBadge: cart.totalItem > 0,
               badgeContent: Text(
                 cart.totalItem.toString(),
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white),
               ),
               child: IconButton(
-                icon: Icon(Icons.shopping_cart),
+                icon: const Icon(Icons.shopping_cart),
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (ctx) => HalamanCheckout()),
+                    MaterialPageRoute(builder: (ctx) => const HalamanCheckout()),
                   );
                 },
               ),
             ),
           ),
           IconButton(onPressed: chatAdmin, icon: const Icon(Icons.chat)),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             child: TextField(
               controller: searchController,
               decoration: InputDecoration(
                 hintText: 'Cari semen, cat, pipa...',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 suffixIcon: searchController.text.isNotEmpty
-               ? IconButton(
-                        icon: Icon(Icons.clear),
+              ? IconButton(
+                        icon: const Icon(Icons.clear),
                         onPressed: () {
                           searchController.clear();
                           getProduk(kategori: kategoriDipilih);
@@ -363,10 +360,10 @@ IconButton(
             height: 50,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               itemCount: kategori.length,
               itemBuilder: (ctx, i) => Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: ChoiceChip(
                   label: Text(kategori[i]),
                   selected: kategoriDipilih == kategori[i],
@@ -384,18 +381,17 @@ IconButton(
           ),
           Expanded(
             child: loading
-           ? const Center(child: CircularProgressIndicator(color: warnaUtama))
-              // <-- FIX: TAMPILIN ERROR KALO SERVER MATI
+          ? const Center(child: CircularProgressIndicator(color: warnaUtama))
               : errorMsg.isNotEmpty
-              ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.wifi_off, size: 64, color: Colors.red),
-                    SizedBox(height: 16),
+             ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.wifi_off, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
                     Text(errorMsg, textAlign: TextAlign.center),
-                    SizedBox(height: 16),
-                    ElevatedButton(onPressed: () => getProduk(), child: Text('Coba Lagi'))
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: () => getProduk(), child: const Text('Coba Lagi'))
                   ]))
                   : produk.isEmpty
-                  ? const Center(child: Text('Produk tidak ditemukan', style: TextStyle(fontSize: 16)))
+                 ? const Center(child: Text('Produk tidak ditemukan', style: TextStyle(fontSize: 16)))
                       : RefreshIndicator(
                           onRefresh: () => getProduk(search: searchController.text, kategori: kategoriDipilih),
                           child: ListView.builder(
@@ -403,7 +399,6 @@ IconButton(
                             itemBuilder: (c, i) {
                               final p = produk[i];
                               final hargaData = p['harga'];
-                              // <-- FIX: ANTI CRASH JSON
                               Map hargaMap = {};
                               try {
                                 hargaMap = hargaData is String? json.decode(hargaData) : hargaData;
@@ -427,7 +422,7 @@ IconButton(
                                         width: 50,
                                         height: 50,
                                         color: Colors.grey[300],
-                                        child: Icon(Icons.image, color: Colors.grey),
+                                        child: const Icon(Icons.image, color: Colors.grey),
                                       ),
                                     ),
                                   ),
@@ -449,7 +444,7 @@ IconButton(
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text('${p['nama']} ditambahkan ke keranjang'),
-                                          duration: Duration(seconds: 1),
+                                          duration: const Duration(seconds: 1),
                                           backgroundColor: warnaUtama,
                                         ),
                                       );
