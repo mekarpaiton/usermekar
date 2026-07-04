@@ -1,253 +1,187 @@
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
-import '../config.dart';
+import '../config.dart'; // ← IMPORT CONFIG
 
 class HalamanCheckout extends StatefulWidget {
   const HalamanCheckout({super.key});
-
   @override
   State<HalamanCheckout> createState() => _HalamanCheckoutState();
 }
 
 class _HalamanCheckoutState extends State<HalamanCheckout> {
-  bool loading = false;
   final namaCtrl = TextEditingController();
-  final waCtrl = TextEditingController();
+  final hpCtrl = TextEditingController();
+  final alamatCtrl = TextEditingController();
+  bool loading = false;
 
-  Future<void> kirimOrder(CartProvider cart) async {
-    if (cart.items.isEmpty) return;
-
-    // 1. Siapkan pesan WA
-    String pesan = "Halo TB. MEKAR, saya mau pesan:\n\n";
-    cart.items.forEach((key, item) {
-      pesan += "${item.nama} (${item.jumlah}x) - Rp ${item.harga * item.jumlah}\n";
-    });
-    pesan += "\nTotal: Rp ${cart.totalHarga}";
-    if (namaCtrl.text.isNotEmpty) {
-      pesan += "\nNama: ${namaCtrl.text}";
+  void kirimWA() {
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    if (cart.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Keranjang masih kosong'), backgroundColor: Colors.red),
+      );
+      return;
     }
 
-    final encodedPesan = Uri.encodeComponent(pesan);
-    // PAKAI api.whatsapp.com, bukan wa.me
-    final waUrl = Uri.parse('https://api.whatsapp.com/send?phone=$waAdmin&text=$encodedPesan');
+    String pesan = 'Halo ${AppConfig.namaToko}, saya mau pesan:\n\n'; // ← PAKE CONFIG
+    pesan += 'Nama: ${namaCtrl.text}\n';
+    pesan += 'HP: ${hpCtrl.text}\n';
+    pesan += 'Alamat: ${alamatCtrl.text}\n\n';
+    pesan += 'Pesanan:\n';
+    
+    for (var item in cart.items.values) {
+      pesan += '- ${item.nama} x${item.qty} = Rp ${item.harga * item.qty}\n';
+    }
+    pesan += '\nTotal: Rp ${cart.totalHarga}';
+    pesan += '\n\nMohon diproses ya 🙏';
+
+    final waUrl = Uri.parse(AppConfig.linkWaPesan(pesan)); // ← PAKE HELPER CONFIG
+    
+    launchUrl(waUrl, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> simpanOrder() async {
+    if (namaCtrl.text.isEmpty || hpCtrl.text.isEmpty || alamatCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lengkapi data dulu Boss'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
 
     setState(() => loading = true);
-
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    
     try {
-      // 2. Kirim ke Panel / API dulu
       final res = await http.post(
-        Uri.parse('$baseUrl/api/order'),
+        Uri.parse('${AppConfig.baseUrl}/api/order'), // ← PAKE CONFIG
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
-          'nama': namaCtrl.text.isEmpty? 'Pelanggan' : namaCtrl.text,
-          'wa': waCtrl.text,
+          'nama_pembeli': namaCtrl.text,
+          'wa_pembeli': hpCtrl.text,
+          'alamat': alamatCtrl.text,
           'items': cart.items.values.map((e) => {
             'id': e.id,
             'nama': e.nama,
             'harga': e.harga,
-            'qty': e.jumlah, // Panel bacanya qty, bukan jumlah
+            'qty': e.qty,
+            'foto': e.foto,
           }).toList(),
           'total': cart.totalHarga,
+          'status': 'Baru',
         }),
       ).timeout(const Duration(seconds: 15));
 
-      if (res.statusCode!= 200 && res.statusCode!= 201) {
-        throw Exception('Panel error ${res.statusCode}');
-      }
+      if (!mounted) return;
 
-      // 3. Sukses masuk Panel, baru buka WA
-      if (await canLaunchUrl(waUrl)) {
-        await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+      if (res.statusCode == 200 || res.statusCode == 201) {
         cart.clear();
-        if (mounted) Navigator.popUntil(context, (route) => route.isFirst);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pesanan berhasil dikirim!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
+      } else {
+        throw Exception('Server error ${res.statusCode}');
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal kirim ke Panel: $e')),
-        );
-      }
-      // Fallback: tetap buka WA
-      if (await canLaunchUrl(waUrl)) {
-        await launchUrl(waUrl, mode: LaunchMode.externalApplication);
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal kirim pesanan: $e'), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => loading = false);
     }
   }
 
   @override
-  void dispose() {
-    namaCtrl.dispose();
-    waCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
-
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Keranjang Belanja'),
+        title: const Text('Checkout'),
         backgroundColor: const Color(0xFF7F00FF),
       ),
       body: cart.items.isEmpty
-         ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.remove_shopping_cart, size: 100, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('Keranjang masih kosong', style: TextStyle(fontSize: 18)),
-                  SizedBox(height: 8),
-                  Text('Yuk belanja dulu Boss!', style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            )
-          : Column(
+          ? const Center(child: Text('Keranjang kosong'))
+          : ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                // Form Nama / WA
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: namaCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Nama Anda',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person),
+                TextField(
+                  controller: namaCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Nama Lengkap',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: hpCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'No. WhatsApp',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: alamatCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Alamat Lengkap',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text('Ringkasan Pesanan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Divider(),
+                ...cart.items.values.map((item) => ListTile(
+                  leading: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(item.foto, width: 50, height: 50, fit: BoxFit.cover),
+                  ),
+                  title: Text(item.nama),
+                  subtitle: Text('Rp ${item.harga} x ${item.qty}'),
+                  trailing: Text('Rp ${item.harga * item.qty}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                )),
+                const Divider(),
+                ListTile(
+                  title: const Text('TOTAL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  trailing: Text('Rp ${cart.totalHarga}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: loading ? null : kirimWA,
+                        icon: const Icon(Icons.chat),
+                        label: const Text('Chat WA'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.all(16),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: waCtrl,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          labelText: 'No. WA',
-                          hintText: '62812...',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.phone),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: loading ? null : simpanOrder,
+                        icon: loading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Icon(Icons.send),
+                        label: Text(loading ? 'Mengirim...' : 'Kirim Order'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7F00FF),
+                          padding: const EdgeInsets.all(16),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                // List Barang
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(top: 10),
-                    itemCount: cart.items.length,
-                    itemBuilder: (ctx, i) {
-                      final item = cart.items.values.toList()[i];
-                      final productId = cart.items.keys.toList()[i];
-                      return Dismissible(
-                        key: ValueKey(productId),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Colors.red,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(Icons.delete, color: Colors.white, size: 40),
-                        ),
-                        onDismissed: (direction) {
-                          Provider.of<CartProvider>(context, listen: false)
-                             .removeItem(productId);
-                        },
-                        child: Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
-                          child: ListTile(
-                            leading: Image.network(
-                              item.gambar,
-                              width: 50,
-                              height: 50,
-                              fit: BoxFit.cover,
-                              errorBuilder: (c, e, s) => Container(
-                                width: 50,
-                                height: 50,
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.image, color: Colors.grey),
-                              ),
-                            ),
-                            title: Text(item.nama),
-                            subtitle: Text('Rp ${item.harga} x ${item.jumlah}'),
-                            trailing: SizedBox(
-                              width: 120,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                    onPressed: () {
-                                      Provider.of<CartProvider>(context, listen: false)
-                                         .kurangItem(productId);
-                                    },
-                                  ),
-                                  Text(
-                                    '${item.jumlah}',
-                                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.add_circle, color: Colors.green),
-                                    onPressed: () {
-                                      Provider.of<CartProvider>(context, listen: false)
-                                         .tambahItem(productId);
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // Total
-                Card(
-                  margin: const EdgeInsets.all(15),
-                  child: Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Total Bayar:', style: TextStyle(fontSize: 20)),
-                        Text(
-                          'Rp ${cart.totalHarga}',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF7F00FF),
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
-                ),
-                // Tombol Checkout
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.fromLTRB(15, 0, 15, 15),
-                  child: ElevatedButton.icon(
-                    icon: loading
-                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.chat),
-                    label: Text(
-                      loading? 'Mengirim...' : 'Checkout via WhatsApp',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                    onPressed: cart.items.isEmpty || loading? null : () => kirimOrder(cart),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
