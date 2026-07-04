@@ -1,12 +1,12 @@
 class CartItem {
   final String id;
   final String nama;
-  final int harga; // harga final yg dibayar user
-  final int hargaNormal; // harga sebelum promo, buat dicoret
-  final int isPromo; // 0 atau 1
+  final int harga;
+  final int hargaNormal;
+  final int isPromo;
   final String varian;
   final String gambar;
-  int jumlah;
+  int qty; // <-- ganti dari jumlah jadi qty
 
   CartItem({
     required this.id,
@@ -16,7 +16,7 @@ class CartItem {
     required this.isPromo,
     required this.varian,
     required this.gambar,
-    this.jumlah = 1,
+    this.qty = 1, // <-- ganti dari jumlah
   });
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +27,6 @@ class CartItem {
     'is_promo': isPromo,
     'varian': varian,
     'gambar': gambar,
-    'qty': jumlah,
+    'qty': qty,
   };
 }
