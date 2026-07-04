@@ -510,163 +510,166 @@ class _HomePageState extends State<HomePage> {
                             onRefresh: () => getProduk(search: searchController.text, kategori: kategoriDipilih),
                             child: ListView.builder(
                               itemCount: produk.length,
-                              itemBuilder: (c, i) {
-                                final p = produk[i];
-                                final isPromo = p['is_promo'] == 1;
-                                final teksPromo = p['teks_promo']?? '';
-                                final varianList = p['varian'] as List;
-                                final hargaUmum = p['harga_umum'] as Map;
-                                final hargaUmumAsli = p['harga_umum_asli'] as Map;
+ itemBuilder: (c, i) {
+  final p = produk[i];
+  final isPromo = p['is_promo'] == 1;
+  final teksPromo = p['teks_promo']?? '';
+  final varianList = p['varian'] as List;
+  final hargaUmum = p['harga_umum'] as Map;
+  final hargaUmumAsli = p['harga_umum_asli'] as Map;
 
-                                String hargaTampil = '';
-                                String hargaCoret = '';
-                                bool adaPromo = false;
+  String hargaTampil = '';
+  String hargaCoret = '';
+  bool adaPromo = false;
 
-                                if (varianList.isNotEmpty) {
-                                  int hargaTermurah = 999999999;
-                                  int hargaAsliTermurah = 999999999;
-                                  for (var v in varianList) {
-                                    int hf = v['harga_final']?? 0;
-                                    int ha = v['harga_asli']?? 0;
-                                    if (hf < hargaTermurah) {
-                                      hargaTermurah = hf;
-                                      hargaAsliTermurah = ha;
-                                      adaPromo = v['is_promo'] == 1;
-                                    }
-                                  }
-                                  hargaTampil = 'Mulai Rp $hargaTermurah';
-                                  if (adaPromo && hargaAsliTermurah > hargaTermurah) {
-                                    hargaCoret = 'Rp $hargaAsliTermurah';
-                                  }
-                                } else {
-                                  int hf = hargaUmum['umum']?? 0;
-                                  int ha = hargaUmumAsli['umum']?? 0;
-                                  hargaTampil = 'Rp $hf / ${p['satuan']?? ''}';
-                                  if (isPromo && ha > hf) {
-                                    hargaCoret = 'Rp $ha';
-                                    adaPromo = true;
-                                  }
-                                }
-
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  child: InkWell(
-                                    onTap: () {
-                                      if (varianList.isNotEmpty) showPilihVarian(p);
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Stack(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius: BorderRadius.circular(8),
-                                                child: Image.network(
-                                                  p['foto']?? '',
-                                                  width: 80,
-                                                  height: 80,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (c, e, s) => Container(
-                                                    width: 80,
-                                                    height: 80,
-                                                    color: Colors.grey[300],
-                                                    child: const Icon(Icons.image, color: Colors.grey),
-                                                  ),
-                                                ),
-                                              ),
-                                              if (isPromo)
-                                                Positioned(
-                                                  top: 0,
-                                                  left: 0,
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                    decoration: const BoxDecoration(
-                                                      color: Colors.red,
-                                                      borderRadius: BorderRadius.only(
-                                                        topLeft: Radius.circular(8),
-                                                        bottomRight: Radius.circular(8),
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      teksPromo.isNotEmpty? teksPromo : 'PROMO',
-                                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(p['nama']?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                                const SizedBox(height: 4),
-                                                if (hargaCoret.isNotEmpty)
-                                                  Text(
-                                                    hargaCoret,
-                                                    style: const TextStyle(
-                                                      decoration: TextDecoration.lineThrough,
-                                                      color: Colors.grey,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                Text(
-                                                  hargaTampil,
-                                                  style: TextStyle(
-                                                    color: adaPromo? Colors.red : Colors.black87,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                if (varianList.isNotEmpty)
-                                                  Text(
-                                                    '${varianList.length} Varian',
-                                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                                  ),
-                                                Text('Stok: ${p['stok']?? 0}', style: const TextStyle(fontSize: 12)),
-                                              ],
-                                            ),
-                                          ),
-                                          IconButton(
-                                            icon: Icon(Icons.add_shopping_cart, color: (p['stok']?? 0) == 0? Colors.grey : warnaUtama),
-                                            onPressed: (p['stok']?? 0) == 0? null : () {
-                                              if (varianList.isNotEmpty) {
-                                                showPilihVarian(p);
-                                              } else {
-                                                Provider.of<CartProvider>(context, listen: false).addItem(
-                                                  p['id'].toString(),
-                                                  p['nama'],
-                                                  hargaUmum['umum']?? 0,
-                                                  p['foto']?? '',
-                                                  varian: 'umum',
-                                                  hargaNormal: hargaUmumAsli['umum']?? 0,
-                                                  isPromo: isPromo? 1 : 0,
-                                                );
-                                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text('${p['nama']} ditambahkan'),
-                                                    duration: const Duration(seconds: 1),
-                                                    backgroundColor: warnaUtama,
-                                                  ),
-                                                );
-                                              }
-                                            },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-          ),
-        ],
-      ),
-    );
+  if (varianList.isNotEmpty) {
+    int hargaTermurah = 999999999;
+    int hargaAsliTermurah = 999999999;
+    for (var v in varianList) {
+      int hf = v['harga_final']?? 0;
+      int ha = v['harga_asli']?? 0;
+      if (hf < hargaTermurah) {
+        hargaTermurah = hf;
+        hargaAsliTermurah = ha;
+        adaPromo = v['is_promo'] == 1;
+      }
+    }
+    hargaTampil = 'Mulai Rp $hargaTermurah';
+    if (adaPromo && hargaAsliTermurah > hargaTermurah) {
+      hargaCoret = 'Rp $hargaAsliTermurah';
+    }
+  } else {
+    int hf = hargaUmum['umum']?? 0;
+    int ha = hargaUmumAsli['umum']?? 0;
+    hargaTampil = 'Rp $hf / ${p['satuan']?? ''}';
+    if (isPromo && ha > hf) {
+      hargaCoret = 'Rp $ha';
+      adaPromo = true;
+    }
   }
-}
+
+  return Card(
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    child: InkWell(
+      onTap: () { // <-- INI YANG DITAMBAH
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DetailProdukPage(produk: p),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    p['foto']?? '',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) => Container(
+                      width: 80,
+                      height: 80,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.image, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                if (isPromo)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          bottomRight: Radius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        teksPromo.isNotEmpty? teksPromo : 'PROMO',
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p['nama']?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  if (hargaCoret.isNotEmpty)
+                    Text(
+                      hargaCoret,
+                      style: const TextStyle(
+                        decoration: TextDecoration.lineThrough,
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                  Text(
+                    hargaTampil,
+                    style: TextStyle(
+                      color: adaPromo? Colors.red : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (varianList.isNotEmpty)
+                    Text(
+                      '${varianList.length} Varian',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  Text('Stok: ${p['stok']?? 0}', style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.add_shopping_cart, color: (p['stok']?? 0) == 0? Colors.grey : warnaUtama),
+              onPressed: (p['stok']?? 0) == 0? null : () {
+                if (varianList.isNotEmpty) {
+                  // Klik ikon cart juga buka detail biar pilih varian
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DetailProdukPage(produk: p),
+                    ),
+                  );
+                } else {
+                  Provider.of<CartProvider>(context, listen: false).addItem(
+                    p['id'].toString(),
+                    p['nama'],
+                    hargaUmum['umum']?? 0,
+                    p['foto']?? '',
+                    varian: 'umum',
+                    hargaNormal: hargaUmumAsli['umum']?? 0,
+                    isPromo: isPromo? 1 : 0,
+                  );
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${p['nama']} ditambahkan'),
+                      duration: const Duration(seconds: 1),
+                      backgroundColor: warnaUtama,
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+},
