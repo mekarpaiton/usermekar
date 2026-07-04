@@ -290,11 +290,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   void chatAdmin() async {
-    final url = Uri.parse(AppConfig.linkWaPesan('Halo ${AppConfig.namaToko}, saya mau tanya produk'));
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
+  final waUrl = Uri.parse(AppConfig.linkWaApp('Halo ${AppConfig.namaToko}, saya mau tanya produk'));
+  
+  if (await canLaunchUrl(waUrl)) {
+    await launchUrl(waUrl, mode: LaunchMode.externalApplication);
+  } else {
+    // Fallback kalau WA belum install, pake wa.me
+    final webUrl = Uri.parse(AppConfig.linkWaPesan('Halo ${AppConfig.namaToko}, saya mau tanya produk'));
+    await launchUrl(webUrl, mode: LaunchMode.externalApplication);
   }
+}
 
   @override
   Widget build(BuildContext context) {
