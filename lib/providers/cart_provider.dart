@@ -6,87 +6,74 @@ import 'cart_item.dart';
 class CartProvider with ChangeNotifier {
   Map<String, CartItem> _items = {};
 
-  CartProvider() {
-    loadCart();
-  }
-
   Map<String, CartItem> get items => {..._items};
-  int get totalItem => _items.values.fold(0, (sum, item) => sum + item.qty);
-  int get totalHarga => _items.values.fold(0, (sum, item) => sum + (item.harga * item.qty));
 
-  void addItem(String id, String nama, int harga, String gambar, {required String varian}) {
-    final key = '$id-$varian';
-    if (_items.containsKey(key)) {
-      _items.update(key, (item) => CartItem(
-        id: item.id, nama: item.nama, harga: item.harga,
-        varian: item.varian, gambar: item.gambar, qty: item.qty + 1,
-      ));
+  int get totalItem {
+    int total = 0;
+    _items.forEach((key, item) => total += item.jumlah);
+    return total;
+  } // tutup totalItem
+
+  double get totalHarga {
+    double total = 0;
+    _items.forEach((key, item) => total += item.harga * item.jumlah);
+    return total;
+  } // tutup totalHarga
+
+  void addItem(
+    String idProduk,
+    String namaProduk,
+    int harga,
+    String gambar, {
+    String? varian, // ← parameter baru
+  }) {
+    final itemBaru = CartItem(
+      idProduk: idProduk,
+      namaProduk: namaProduk,
+      varian: varian,
+      harga: harga,
+      gambar: gambar,
+    ); // tutup CartItem
+
+    if (_items.containsKey(itemBaru.cartId)) {
+      _items.update(itemBaru.cartId, (item) => CartItem(
+        idProduk: item.idProduk,
+        namaProduk: item.namaProduk,
+        varian: item.varian,
+        harga: item.harga,
+        gambar: item.gambar,
+        jumlah: item.jumlah + 1,
+      )); // tutup CartItem update
     } else {
-      _items.putIfAbsent(key, () => CartItem(
-        id: id, nama: nama, harga: harga, varian: varian, gambar: gambar,
-      ));
+      _items.putIfAbsent(itemBaru.cartId, () => itemBaru);
     }
     notifyListeners();
-    saveCart();
-  }
+  } // tutup addItem
 
-  void removeItem(String key) {
-    _items.remove(key);
-    notifyListeners();
-    saveCart();
-  }
-
-  void kurangItem(String key) {
-    if (!_items.containsKey(key)) return;
-    if (_items[key]!.qty > 1) {
-      _items.update(key, (item) => CartItem(
-        id: item.id, nama: item.nama, harga: item.harga,
-        varian: item.varian, gambar: item.gambar, qty: item.qty - 1,
-      ));
+  void removeSingleItem(String cartId) {
+    if (!_items.containsKey(cartId)) return;
+    if (_items[cartId]!.jumlah > 1) {
+      _items.update(cartId, (item) => CartItem(
+        idProduk: item.idProduk,
+        namaProduk: item.namaProduk,
+        varian: item.varian,
+        harga: item.harga,
+        gambar: item.gambar,
+        jumlah: item.jumlah - 1,
+      )); // tutup CartItem
     } else {
-      _items.remove(key);
+      _items.remove(cartId);
     }
     notifyListeners();
-    saveCart();
-  }
+  } // tutup removeSingleItem
 
-  void tambahItem(String key) {
-    _items.update(key, (item) => CartItem(
-      id: item.id, nama: item.nama, harga: item.harga,
-      varian: item.varian, gambar: item.gambar, qty: item.qty + 1,
-    ));
+  void removeItem(String cartId) {
+    _items.remove(cartId);
     notifyListeners();
-    saveCart();
-  }
+  } // tutup removeItem
 
   void clear() {
-    _items.clear();
+    _items = {};
     notifyListeners();
-    saveCart();
-  }
-
-  Future<void> saveCart() async {
-    final prefs = await SharedPreferences.getInstance();
-    final cartData = _items.map((key, item) => MapEntry(key, item.toJson()));
-    prefs.setString('cartTBMEKAR', json.encode(cartData));
-  }
-
-  Future<void> loadCart() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey('cartTBMEKAR')) return;
-    final cartData = json.decode(prefs.getString('cartTBMEKAR')!) as Map<String, dynamic>;
-    final loadedCart = <String, CartItem>{};
-    cartData.forEach((key, itemData) {
-      loadedCart[key] = CartItem(
-        id: itemData['id'],
-        nama: itemData['nama'],
-        qty: itemData['qty']?? 1,
-        harga: itemData['harga'],
-        varian: itemData['varian']?? 'umum',
-        gambar: itemData['gambar'],
-      );
-    });
-    _items = loadedCart;
-    notifyListeners();
-  }
-}
+  } // tutup clear
+} // tutup CartProvider
