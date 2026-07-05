@@ -11,25 +11,19 @@ class CartProvider with ChangeNotifier {
   }
 
   Map<String, CartItem> get items => {..._items};
-  int get totalItem => _items.values.fold(0, (sum, item) => sum + item.qty); // <-- qty
-  int get totalHarga => _items.values.fold(0, (sum, item) => sum + (item.harga * item.qty)); // <-- qty
+  int get totalItem => _items.values.fold(0, (sum, item) => sum + item.qty);
+  int get totalHarga => _items.values.fold(0, (sum, item) => sum + (item.harga * item.qty));
 
-  void addItem(String id, String nama, int harga, String gambar, {
-    required String varian,
-    required int hargaNormal,
-    required int isPromo,
-  }) {
+  void addItem(String id, String nama, int harga, String gambar, {required String varian}) {
     final key = '$id-$varian';
     if (_items.containsKey(key)) {
       _items.update(key, (item) => CartItem(
         id: item.id, nama: item.nama, harga: item.harga,
-        hargaNormal: item.hargaNormal, isPromo: item.isPromo,
-        varian: item.varian, gambar: item.gambar, qty: item.qty + 1, // <-- qty
+        varian: item.varian, gambar: item.gambar, qty: item.qty + 1,
       ));
     } else {
       _items.putIfAbsent(key, () => CartItem(
-        id: id, nama: nama, harga: harga, hargaNormal: hargaNormal,
-        isPromo: isPromo, varian: varian, gambar: gambar,
+        id: id, nama: nama, harga: harga, varian: varian, gambar: gambar,
       ));
     }
     notifyListeners();
@@ -44,11 +38,10 @@ class CartProvider with ChangeNotifier {
 
   void kurangItem(String key) {
     if (!_items.containsKey(key)) return;
-    if (_items[key]!.qty > 1) { // <-- qty
+    if (_items[key]!.qty > 1) {
       _items.update(key, (item) => CartItem(
         id: item.id, nama: item.nama, harga: item.harga,
-        hargaNormal: item.hargaNormal, isPromo: item.isPromo,
-        varian: item.varian, gambar: item.gambar, qty: item.qty - 1, // <-- qty
+        varian: item.varian, gambar: item.gambar, qty: item.qty - 1,
       ));
     } else {
       _items.remove(key);
@@ -60,8 +53,7 @@ class CartProvider with ChangeNotifier {
   void tambahItem(String key) {
     _items.update(key, (item) => CartItem(
       id: item.id, nama: item.nama, harga: item.harga,
-      hargaNormal: item.hargaNormal, isPromo: item.isPromo,
-      varian: item.varian, gambar: item.gambar, qty: item.qty + 1, // <-- qty
+      varian: item.varian, gambar: item.gambar, qty: item.qty + 1,
     ));
     notifyListeners();
     saveCart();
@@ -82,23 +74,18 @@ class CartProvider with ChangeNotifier {
   Future<void> loadCart() async {
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey('cartTBMEKAR')) return;
-
     final cartData = json.decode(prefs.getString('cartTBMEKAR')!) as Map<String, dynamic>;
     final loadedCart = <String, CartItem>{};
-
     cartData.forEach((key, itemData) {
       loadedCart[key] = CartItem(
         id: itemData['id'],
         nama: itemData['nama'],
-        qty: itemData['qty']?? 1, // <-- qty
+        qty: itemData['qty']?? 1,
         harga: itemData['harga'],
-        hargaNormal: itemData['harga_normal']?? itemData['harga'],
-        isPromo: itemData['is_promo']?? 0,
         varian: itemData['varian']?? 'umum',
         gambar: itemData['gambar'],
       );
     });
-
     _items = loadedCart;
     notifyListeners();
   }
