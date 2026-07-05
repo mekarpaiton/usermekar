@@ -35,19 +35,20 @@ class TBMekarApp extends StatelessWidget {
             backgroundColor: warnaUtama,
             foregroundColor: Colors.white,
             elevation: 0,
-          ),
+          ), // tutup AppBarTheme
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: warnaUtama,
               foregroundColor: Colors.white,
-            ),//style
-          ),//themedata
-        ),//button theme
+            ), // tutup styleFrom
+          ), // tutup ElevatedButtonThemeData
+        ), // tutup ThemeData
         home: const SplashScreen(),
-      ),//theme:
-    );//material app
-  ),//notif provider
-}//widget
+      ), // tutup MaterialApp
+    ); // tutup ChangeNotifierProvider
+  } // tutup build
+} // tutup TBMekarApp
+
 
 // =================================================================
 // SPLASH SCREEN
