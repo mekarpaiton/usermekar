@@ -40,14 +40,14 @@ class TBMekarApp extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: warnaUtama,
               foregroundColor: Colors.white,
-            ),
-          ),
-        ),
+            ),//style
+          ),//themedata
+        ),//button theme
         home: const SplashScreen(),
-      ),
-    );
-  }
-}
+      ),//theme:
+    );//material app
+  ),//notif provider
+}//widget
 
 // =================================================================
 // SPLASH SCREEN
