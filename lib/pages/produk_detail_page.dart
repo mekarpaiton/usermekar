@@ -3,153 +3,133 @@ import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../config.dart';
 
-class DetailProdukPage extends StatefulWidget {
-  final Map produk;
-  const DetailProdukPage({super.key, required this.produk});
+class ProdukDetailPage extends StatefulWidget {
+  final Map produk; // data dari API
+  const ProdukDetailPage({super.key, required this.produk});
 
   @override
-  State<DetailProdukPage> createState() => _DetailProdukPageState();
-}
+  State<ProdukDetailPage> createState() => _ProdukDetailPageState(); // tutup createState
+} // tutup ProdukDetailPage
 
-class _DetailProdukPageState extends State<DetailProdukPage> {
-  String? varianDipilih;
-  int qty = 1;
+class _ProdukDetailPageState extends State<ProdukDetailPage> {
+  Map? varianDipilih; // null kalau nggak ada varian
 
   @override
   void initState() {
     super.initState();
-    final varianList = widget.produk['varian'] as List;
+    // Kalau ada varian, pilih yang pertama sebagai default
+    final List varianList = widget.produk['varian']?? [];
     if (varianList.isNotEmpty) {
-      varianDipilih = varianList[0]['nama'];
+      varianDipilih = varianList[0];
     }
-  }
-
-  int getHarga() {
-    final varianList = widget.produk['varian'] as List;
-    if (varianList.isNotEmpty && varianDipilih!= null) {
-      final v = varianList.firstWhere((e) => e['nama'] == varianDipilih);
-      return v['harga'];
-    }
-    return widget.produk['harga_umum']['umum']?? 0;
-  }
-
-  int getStok() {
-    final varianList = widget.produk['varian'] as List;
-    if (varianList.isNotEmpty && varianDipilih!= null) {
-      final v = varianList.firstWhere((e) => e['nama'] == varianDipilih);
-      return v['stok']?? 0;
-    }
-    return widget.produk['stok']?? 0;
-  }
+  } // tutup initState
 
   @override
   Widget build(BuildContext context) {
-    final p = widget.produk;
-    final varianList = p['varian'] as List;
-    final harga = getHarga();
-    final stok = getStok();
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final List varianList = widget.produk['varian']?? [];
+    final bool adaVarian = varianList.isNotEmpty;
+
+    // Harga yg ditampilin = harga varian kalau ada, kalau nggak pake harga umum
+    final int hargaTampil = adaVarian? varianDipilih!['harga'] : widget.produk['harga'];
 
     return Scaffold(
-      appBar: AppBar(title: Text(p['nama']), backgroundColor: Color(0xFF7F00FF)),
+      appBar: AppBar(
+        title: Text(widget.produk['nama']),
+        backgroundColor: Colors.orange,
+      ), // tutup AppBar
       body: Column(
         children: [
           Expanded(
             child: ListView(
               children: [
                 Image.network(
-                  p['foto']?? '',
+                  widget.produk['gambar'],
+                  height: 250,
                   width: double.infinity,
-                  height: 300,
                   fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) => Container(
-                    height: 300, color: Colors.grey[300],
-                    child: const Icon(Icons.image, size: 80),
-                  ),
-                ),
+                  errorBuilder: (c, e, s) => const Icon(Icons.image, size: 100),
+                ), // tutup Image
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(p['nama'], style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      Text(
+                        widget.produk['nama'],
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ), // tutup Text nama
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text('Rp $harga', style: TextStyle(color: Color(0xFF7F00FF), fontWeight: FontWeight.bold, fontSize: 24)),
-                          Text(' / ${p['satuan']?? ''}', style: const TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                      Text('Stok: $stok', style: const TextStyle(color: Colors.grey)),
-                      const Divider(height: 32),
-                      if (varianList.isNotEmpty)...[
-                        const Text('Pilih Varian:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Rp $hargaTampil',
+                        style: const TextStyle(fontSize: 20, color: Colors.orange, fontWeight: FontWeight.w600),
+                      ), // tutup Text harga
+                      const SizedBox(height: 16),
+
+                      // Pilihan Varian muncul kalau ada
+                      if (adaVarian)...[
+                        const Text('Pilih Varian:', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
-                          children: varianList.map((v) {
-                            final selected = varianDipilih == v['nama'];
+                          children: varianList.map<Widget>((varian) {
+                            final bool dipilih = varianDipilih == varian;
                             return ChoiceChip(
-                              label: Text('${v['nama']} - Rp ${v['harga']}'),
-                              selected: selected,
-                              onSelected: (val) => setState(() => varianDipilih = v['nama']),
-                              selectedColor: Color(0xFF7F00FF),
-                            );
-                          }).toList(),
-                        ),
+                              label: Text(varian['nama']),
+                              selected: dipilih,
+                              onSelected: (s) {
+                                setState(() => varianDipilih = varian);
+                              }, // tutup onSelected
+                              selectedColor: Colors.orange,
+                              labelStyle: TextStyle(color: dipilih? Colors.white : Colors.black),
+                            ); // tutup ChoiceChip
+                          }).toList(), // tutup map
+                        ), // tutup Wrap
                         const SizedBox(height: 16),
-                      ],
-                      const Text('Jumlah:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Row(
-                        children: [
-                          IconButton(onPressed: qty > 1? () => setState(() => qty--) : null, icon: const Icon(Icons.remove_circle_outline)),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                            decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
-                            child: Text('$qty', style: const TextStyle(fontSize: 18)),
-                          ),
-                          IconButton(onPressed: qty < stok? () => setState(() => qty++) : null, icon: const Icon(Icons.add_circle_outline)),
-                        ],
-                      ),
-                      const Divider(height: 32),
-                      const Text('Deskripsi:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text(p['deskripsi']?? 'Tidak ada deskripsi'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+                      ], // tutup if adaVarian
+
+                      const Text('Deskripsi:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(widget.produk['deskripsi']?? '-'),
+                    ], // tutup children Column
+                  ), // tutup Column
+                ), // tutup Padding
+              ], // tutup children ListView
+            ), // tutup ListView
+          ), // tutup Expanded
+
+          // Tombol Tambah ke Keranjang
           Container(
             padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: stok == 0? null : () {
-                  Provider.of<CartProvider>(context, listen: false).addItem(
-                    p['id'].toString(),
-                    p['nama'],
-                    harga,
-                    p['foto']?? '',
-                    varian: varianDipilih?? 'umum',
-                  );
-                  if (qty > 1) {
-                    final key = '${p['id']}-${varianDipilih?? 'umum'}';
-                    for (int i = 1; i < qty; i++) {
-                      Provider.of<CartProvider>(context, listen: false).tambahItem(key);
-                    }
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${p['nama']} ditambahkan'), backgroundColor: Color(0xFF7F00FF)),
-                  );
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF7F00FF), padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: Text(stok == 0? 'Stok Habis' : 'Tambah ke Keranjang', style: const TextStyle(fontSize: 16)),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.add_shopping_cart),
+              label: const Text('Tambah ke Keranjang'),
+              onPressed: () {
+                cart.addItem(
+                  widget.produk['id'].toString(),
+                  widget.produk['nama'],
+                  hargaTampil,
+                  widget.produk['gambar'],
+                  varian: adaVarian? varianDipilih!['nama'] : null,
+                ); // tutup addItem
+
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${widget.produk['nama']} ditambah'),
+                    duration: const Duration(seconds: 1),
+                  ), // tutup SnackBar
+                ); // tutup showSnackBar
+              }, // tutup onPressed
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ), // tutup styleFrom
+            ), // tutup ElevatedButton
+          ), // tutup Container
+        ], // tutup children Column
+      ), // tutup Column
+    ); // tutup Scaffold
+  } // tutup build
+} // tutup _ProdukDetailPageState
