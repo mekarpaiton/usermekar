@@ -230,19 +230,18 @@ class ShockwavePainter extends CustomPainter {
 // =================================================================
 // HOME PAGE
 // =================================================================
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HalamanKatalog extends StatefulWidget {
+  const HalamanKatalog({super.key});
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HalamanKatalog> createState() => _HalamanKatalogState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HalamanKatalogState extends State<HalamanKatalog> {
   List produk = [];
   List kategori = ['Semua'];
   String kategoriDipilih = 'Semua';
   bool loading = true;
-  String errorMsg = '';
-  TextEditingController searchController = TextEditingController();
+  TextEditingController searchCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -254,124 +253,78 @@ class _HomePageState extends State<HomePage> {
   Future<void> getKategori() async {
     try {
       final res = await http.get(Uri.parse('${AppConfig.baseUrl}/api/kategori'));
-      if (res.statusCode == 200) {
-        final List data = json.decode(res.body);
-        setState(() {
-          kategori = ['Semua',...data.map((e) => e['nama'].toString())];
-        });
-      }
+      final data = json.decode(res.body) as List;
+      setState(() {
+        kategori = ['Semua',...data.map((e) => e['nama'].toString())];
+      });
     } catch (e) {
-      print("Gagal ambil kategori: $e");
+      print('Error kategori: $e');
     }
   }
 
-  Future<void> getProduk({String? search, String? kategori}) async {
-    if (mounted) setState(() { loading = true; errorMsg = ''; });
+  Future<void> getProduk({String? search, String? kat}) async {
+    setState(() => loading = true);
     try {
       String url = '${AppConfig.baseUrl}/api/produk?';
-      if (search!= null && search.isNotEmpty) url += 'search=$search&';
-      if (kategori!= null && kategori!= 'Semua') url += 'kategori=$kategori';
+      if (search!= null && search.isNotEmpty) url += 'q=$search&';
+      if (kat!= null && kat!= 'Semua') url += 'kategori=$kat';
 
-      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 15));
-      if (!mounted) return;
-
-      if (res.statusCode!= 200) throw Exception('Server error ${res.statusCode}');
+      final res = await http.get(Uri.parse(url)).timeout(Duration(seconds: 15));
       setState(() {
         produk = json.decode(res.body);
         loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        loading = false;
-        errorMsg = 'Gagal ambil produk. Cek koneksi internet';
-      });
+      setState(() => loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal ambil produk: $e'), backgroundColor: Colors.red),
+      );
     }
   }
-
-  void chatAdmin() async {
-  final waUrl = Uri.parse(AppConfig.linkWaApp('Halo ${AppConfig.namaToko}, saya mau tanya produk'));
-  
-  if (await canLaunchUrl(waUrl)) {
-    await launchUrl(waUrl, mode: LaunchMode.externalApplication);
-  } else {
-    // Fallback kalau WA belum install, pake wa.me
-    final webUrl = Uri.parse(AppConfig.linkWaPesan('Halo ${AppConfig.namaToko}, saya mau tanya produk'));
-    await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-  }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            Image.asset('assets/images/logomekar.png', height: 35),
-            const SizedBox(width: 10),
-            Text(AppConfig.namaToko),
-          ],
-        ),
+        title: Text(AppConfig.namaToko),
+        backgroundColor: warnaUtama,
         actions: [
           IconButton(
-            icon: const Icon(Icons.receipt_long),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const CekOrderPage()));
-            },
+            icon: Icon(Icons.receipt_long),
+            onPressed: () => Navigator.push(
+              context, MaterialPageRoute(builder: (_) => CekOrderPage())),
+            tooltip: 'Cek Pesanan',
           ),
-          Consumer<CartProvider>(
-            builder: (ctx, cart, child) => badges.Badge(
-              showBadge: cart.totalItem > 0,
-              badgeContent: Text(cart.totalItem.toString(), style: const TextStyle(color: Colors.white)),
-              child: IconButton(
-                icon: const Icon(Icons.shopping_cart),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (ctx) => const HalamanCheckout()));
-                },
-              ),
-            ),
-          ),
-          IconButton(onPressed: chatAdmin, icon: const Icon(Icons.chat)),
-          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(12),
             child: TextField(
-              controller: searchController,
+              controller: searchCtrl,
               decoration: InputDecoration(
-                hintText: 'Cari semen, cat, pipa...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                 ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          searchController.clear();
-                          getProduk(kategori: kategoriDipilih);
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                hintText: 'Cari semen, cat, besi...',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onChanged: (value) => getProduk(search: value, kategori: kategoriDipilih),
+              onChanged: (v) => getProduk(search: v, kat: kategoriDipilih),
             ),
           ),
           SizedBox(
             height: 50,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: EdgeInsets.symmetric(horizontal: 8),
               itemCount: kategori.length,
               itemBuilder: (ctx, i) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
+                padding: EdgeInsets.symmetric(horizontal: 4),
                 child: ChoiceChip(
                   label: Text(kategori[i]),
                   selected: kategoriDipilih == kategori[i],
-                  onSelected: (selected) {
+                  onSelected: (s) {
                     setState(() => kategoriDipilih = kategori[i]);
-                    getProduk(search: searchController.text, kategori: kategori[i]);
+                    getProduk(search: searchCtrl.text, kat: kategori[i]);
                   },
                   selectedColor: warnaUtama,
                   labelStyle: TextStyle(
@@ -383,188 +336,103 @@ class _HomePageState extends State<HomePage> {
           ),
           Expanded(
             child: loading
-             ? const Center(child: CircularProgressIndicator(color: warnaUtama))
-                : errorMsg.isNotEmpty
-                 ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.wifi_off, size: 64, color: Colors.red),
-                        const SizedBox(height: 16),
-                        Text(errorMsg, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        ElevatedButton(onPressed: () => getProduk(), child: const Text('Coba Lagi'))
-                      ]))
-                    : produk.isEmpty
-                     ? const Center(child: Text('Produk tidak ditemukan', style: TextStyle(fontSize: 16)))
-                        : RefreshIndicator(
-                            onRefresh: () => getProduk(search: searchController.text, kategori: kategoriDipilih),
-                            child: ListView.builder(
-                              itemCount: produk.length,
-                              itemBuilder: (c, i) {
-                                final p = produk[i];
-                                final isPromo = p['is_promo'] == 1;
-                                final teksPromo = p['teks_promo']?? '';
-                                final varianList = p['varian'] as List;
-                                final hargaUmum = p['harga_umum'] as Map;
-                                final hargaUmumAsli = p['harga_umum_asli'] as Map;
-
-                                String hargaTampil = '';
-                                String hargaCoret = '';
-                                bool adaPromo = false;
-
-                                if (varianList.isNotEmpty) {
-                                  int hargaTermurah = 999999999;
-                                  int hargaAsliTermurah = 999999999;
-                                  for (var v in varianList) {
-                                    int hf = v['harga_final']?? 0;
-                                    int ha = v['harga_asli']?? 0;
-                                    if (hf < hargaTermurah) {
-                                      hargaTermurah = hf;
-                                      hargaAsliTermurah = ha;
-                                      adaPromo = v['is_promo'] == 1;
-                                    }
-                                  }
-                                  hargaTampil = 'Mulai Rp $hargaTermurah';
-                                  if (adaPromo && hargaAsliTermurah > hargaTermurah) {
-                                    hargaCoret = 'Rp $hargaAsliTermurah';
-                                  }
-                                } else {
-                                  int hf = hargaUmum['umum']?? 0;
-                                  int ha = hargaUmumAsli['umum']?? 0;
-                                  hargaTampil = 'Rp $hf / ${p['satuan']?? ''}';
-                                  if (isPromo && ha > hf) {
-                                    hargaCoret = 'Rp $ha';
-                                    adaPromo = true;
-                                  }
-                                }
-
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => DetailProdukPage(produk: p),
+               ? Center(child: CircularProgressIndicator())
+                : produk.isEmpty
+                   ? Center(child: Text('Produk tidak ditemukan'))
+                    : RefreshIndicator(
+                        onRefresh: () => getProduk(kat: kategoriDipilih),
+                        child: GridView.builder(
+                          padding: EdgeInsets.all(12),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.7,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemCount: produk.length,
+                          itemBuilder: (ctx, i) {
+                            final p = produk[i];
+                            final harga = p['harga_umum']['umum']?? 0;
+                            return GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => DetailProdukPage(produk: p),
+                                ),
+                              ),
+                              child: Card(
+                                elevation: 2,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                                        child: Image.network(
+                                          p['foto']?? '',
+                                          width: double.infinity,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (c, e, s) => Container(
+                                            color: Colors.grey[300],
+                                            child: Icon(Icons.image, size: 50),
+                                          ),
                                         ),
-                                      );
-                                    },
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8),
-                                      child: Row(
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: EdgeInsets.all(8),
+                                      child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Stack(
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius: BorderRadius.circular(8),
-                                                child: Image.network(
-                                                  p['foto']?? '',
-                                                  width: 80,
-                                                  height: 80,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (c, e, s) => Container(
-                                                    width: 80,
-                                                    height: 80,
-                                                    color: Colors.grey[300],
-                                                    child: const Icon(Icons.image, color: Colors.grey),
-                                                  ),
-                                                ),
-                                              ),
-                                              if (isPromo)
-                                                Positioned(
-                                                  top: 0,
-                                                  left: 0,
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                    decoration: const BoxDecoration(
-                                                      color: Colors.red,
-                                                      borderRadius: BorderRadius.only(
-                                                        topLeft: Radius.circular(8),
-                                                        bottomRight: Radius.circular(8),
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      teksPromo.isNotEmpty? teksPromo : 'PROMO',
-                                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
+                                          Text(
+                                            p['nama'],
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                                           ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(p['nama']?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                                const SizedBox(height: 4),
-                                                if (hargaCoret.isNotEmpty)
-                                                  Text(
-                                                    hargaCoret,
-                                                    style: const TextStyle(
-                                                      decoration: TextDecoration.lineThrough,
-                                                      color: Colors.grey,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                Text(
-                                                  hargaTampil,
-                                                  style: TextStyle(
-                                                    color: adaPromo? Colors.red : Colors.black87,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                if (varianList.isNotEmpty)
-                                                  Text(
-                                                    '${varianList.length} Varian',
-                                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                                  ),
-                                                Text('Stok: ${p['stok']?? 0}', style: const TextStyle(fontSize: 12)),
-                                              ],
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'Rp ${harga.toString()} /${p['satuan']}',
+                                            style: TextStyle(
+                                              color: warnaUtama,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
                                             ),
                                           ),
-                                          IconButton(
-                                            icon: Icon(Icons.add_shopping_cart, color: (p['stok']?? 0) == 0? Colors.grey : warnaUtama),
-                                            onPressed: (p['stok']?? 0) == 0? null : () {
-                                              if (varianList.isNotEmpty) {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) => DetailProdukPage(produk: p),
-                                                  ),
-                                                );
-                                              } else {
-                                                Provider.of<CartProvider>(context, listen: false).addItem(
-                                                  p['id'].toString(),
-                                                  p['nama'],
-                                                  hargaUmum['umum']?? 0,
-                                                  p['foto']?? '',
-                                                  varian: 'umum',
-                                                  hargaNormal: hargaUmumAsli['umum']?? 0,
-                                                  isPromo: isPromo? 1 : 0,
-                                                );
-                                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text('${p['nama']} ditambahkan'),
-                                                    duration: const Duration(seconds: 1),
-                                                    backgroundColor: warnaUtama,
-                                                  ),
-                                                );
-                                              }
-                                            },
+                                          Text(
+                                            'Stok: ${p['stok']}',
+                                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                           ),
                                         ],
                                       ),
                                     ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
           ),
         ],
       ),
+      // Floating Cart
+      floatingActionButton: Consumer<CartProvider>(
+        builder: (ctx, cart, child) => FloatingActionButton.extended(
+          onPressed: () => Navigator.push(
+            context, MaterialPageRoute(builder: (_) => HalamanCheckout())),
+          backgroundColor: warnaUtama,
+          icon: Badge(
+            label: Text(cart.totalItem.toString()),
+            isLabelVisible: cart.totalItem > 0,
+            child: Icon(Icons.shopping_cart),
+          ),
+          label: Text('Rp ${cart.totalHarga}'),
+        ),
+      ),
+    );
+  }
+}
     );
   }
 }
