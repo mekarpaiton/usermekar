@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:badges/badges.dart' as badges;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:provider/provider.dart';
 import 'providers/cart_provider.dart';
 import 'pages/halaman_checkout.dart';
-import 'package:badges/badges.dart' as badges;
-import 'config.dart';
 import 'pages/cek_order_page.dart';
-import 'pages/detail_produk_page.dart';
+import 'pages/produk_detail_page.dart';
+import 'config.dart';
 
 const Color warnaUtama = Color(0xFF7F00FF);
 
