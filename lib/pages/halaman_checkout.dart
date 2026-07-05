@@ -34,7 +34,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
 
     try {
       final res = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/api/order'),
+        Uri.parse('${AppConfig.baseUrl}/api/order'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nama_customer': _namaController.text,
