@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:js' as js; // SAKTI: Wajib ada untuk memicu suara asisten Google di browser HP pelanggan
+import 'dart:js_interop'; // FIX: Menggunakan interop modern agar lolos compile Wasm di GitHub Actions
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/cart_provider.dart';
 import '../config.dart';
@@ -64,8 +64,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
         // GABUNGAN NOTIFIKASI: ASISTEN GOOGLE + SUARA UNTUK PELANGGAN
         // ========================================================
         try {
-          js.context.callMethod('eval', [
-            '''
+          final jsCode = '''
             (function() {
               const ctx = new (window.AudioContext || window.webkitAudioContext)();
               
@@ -97,8 +96,11 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
                 }
               }, 500);
             })();
-            '''
-          ]);
+          ''';
+
+          // Eksekusi kode lewat globalContext eval bawaan dart:js_interop (Aman untuk build Web/Wasm)
+          (globalContext['eval'] as JSFunction).call(null, jsCode.toJS);
+          
         } catch (audioError) {
           print('Gagal memutar audio pelanggan: \$audioError');
         }
