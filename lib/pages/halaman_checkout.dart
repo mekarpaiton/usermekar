@@ -6,8 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/cart_provider.dart';
 import '../config.dart';
 
-// SOLUSI AMPUH LINTAS PLATFORM: Menggunakan conditional import aman untuk Web & APK
-import 'package:universal_html/html.dart' as html;
+// TRIK SAKTI: Jika dibuild ke Web, dia membaca file web. Jika dibuild ke APK, dia membaca file stub.
+import 'checkout_audio_stub.dart' if (dart.library.js_interop) 'checkout_audio_web.dart';
 
 class HalamanCheckout extends StatefulWidget {
   const HalamanCheckout({super.key});
@@ -62,52 +62,9 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
         cart.clear();
 
         // ========================================================
-        // GABUNGAN NOTIFIKASI: ASISTEN GOOGLE (HANYA AKTIF DI WEB)
+        // PANGGIL FITUR AUDIO AMAN LINTAS PLATFORM
         // ========================================================
-        try {
-          // KUNCI SUKSES APK: Cek apakah aplikasi sedang dibuka lewat Browser Web
-          // Jika di-compile jadi APK Android biasa, blok ini otomatis dilewati (Aman dari crash!)
-          if (identical(0, 0.0)) { 
-            final jsCode = '''
-              (function() {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // 1. Efek Nada Mantap "Ting-Ting!"
-                const osc1 = ctx.createOscillator(); const gain1 = ctx.createGain();
-                osc1.type = 'sine'; osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
-                gain1.gain.setValueAtTime(0.15, ctx.currentTime);
-                gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-                osc1.connect(gain1); gain1.connect(ctx.destination);
-                osc1.start(); osc1.stop(ctx.currentTime + 0.15);
-                
-                setTimeout(() => {
-                  const osc2 = ctx.createOscillator(); const gain2 = ctx.createGain();
-                  osc2.type = 'sine'; osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
-                  gain2.gain.setValueAtTime(0.2, ctx.currentTime);
-                  gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                  osc2.connect(gain2); gain2.connect(ctx.destination);
-                  osc2.start(); osc2.stop(ctx.currentTime + 0.3);
-                }, 100);
-
-                // 2. Asisten Google berbicara ke Pelanggan
-                setTimeout(() => {
-                  if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                    let ucapan = new SpeechSynthesisUtterance("Orderan sukses bos! Silakan klik kirim di WhatsApp ya.");
-                    ucapan.lang = "id-ID";
-                    ucapan.rate = 1.0;
-                    window.speechSynthesis.speak(ucapan);
-                  }
-                }, 500);
-              })();
-            ''';
-
-            // Panggilan aman lewat universal_html tanpa merusak arsitektur Android APK
-            html.window.eval(jsCode);
-          }
-        } catch (audioError) {
-          print('Gagal memutar audio pelanggan: \$audioError');
-        }
+        putarAudioSukses();
         // ========================================================
 
         String waMsg = 'Halo Kak, saya ${_namaController.text}\n'
