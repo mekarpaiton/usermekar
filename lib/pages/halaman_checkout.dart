@@ -17,61 +17,77 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
   final _nohpController = TextEditingController();
   bool _loading = false;
 
-  Future<void> _kirimOrder() async {
-    final cart = Provider.of<CartProvider>(context, listen: false);
-    if (cart.items.isEmpty) return;
+  import 'package:url_launcher/url_launcher.dart'; // tambah ini di atas
 
-    setState(() => _loading = true); // tutup setState
+Future<void> _kirimOrder() async {
+  final cart = Provider.of<CartProvider>(context, listen: false);
+  if (cart.items.isEmpty) return;
+  
+  // Validasi form
+  if (_namaController.text.isEmpty || _nohpController.text.isEmpty || _alamatController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Lengkapi nama, alamat & no HP dulu'), backgroundColor: Colors.red),
+    );
+    return;
+  }
 
-    String pesan = 'Halo ${AppConfig.namaToko}, saya mau order:\n\n';
-    cart.items.forEach((key, item) {
-      pesan += '- ${item.namaLengkap} x${item.jumlah} = Rp ${item.harga * item.jumlah}\n';
-    }); // tutup forEach
-    pesan += '\nTotal: Rp ${cart.totalHarga}\n\n';
-    pesan += 'Nama: ${_namaController.text}\n';
-    pesan += 'Alamat: ${_alamatController.text}\n';
-    pesan += 'No HP: ${_nohpController.text}';
+  setState(() => _loading = true);
 
-    try {
-      final res = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/api/order'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'nama_customer': _namaController.text,
-          'alamat': _alamatController.text,
-          'no_hp': _nohpController.text,
-          'total': cart.totalHarga,
-          'items': cart.items.values.map((e) => {
-            'id_produk': e.idProduk, // ← ganti dari e.id
-            'nama': e.namaLengkap, // ← ganti dari e.nama
-            'harga': e.harga,
-            'jumlah': e.jumlah, // ← ganti dari e.qty
-            'varian': e.varian,
-          }).toList(), // tutup toList
-        }), // tutup jsonEncode
-      ); // tutup post
+  try {
+    final res = await http.post(
+      Uri.parse('${AppConfig.baseUrl}/api/orders'), // FIX 1: /api/orders bukan /api/order
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        // FIX 2: Samain nama field sama backend Flask
+        'nama_pembeli': _namaController.text, // bukan nama_customer
+        'wa_pembeli': _nohpController.text,   // bukan no_hp
+        'alamat': _alamatController.text,
+        'total': cart.totalHarga,
+        'ongkir': 0, // tambah ini
+        'items': cart.items.values.map((e) => {
+          'id': e.idProduk,        // bukan id_produk
+          'nama': e.namaLengkap,   // udah bener
+          'harga': e.harga,
+          'qty': e.jumlah,         // bukan jumlah
+          'varian': e.varian,
+          'gambar': e.gambar,      // tambah ini biar muncul di admin
+        }).toList(),
+      }),
+    ).timeout(Duration(seconds: 20));
 
-      if (res.statusCode == 200) {
-        cart.clear();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Order berhasil dikirim!')),
-          ); // tutup SnackBar
-          Navigator.pop(context);
-        } // tutup if mounted
-      } else {
-        throw Exception('Gagal kirim order');
-      } // tutup else
-    } catch (e) {
+    final result = jsonDecode(res.body);
+
+    // FIX 3: Backend lu balikin 201 + success: true
+    if (res.statusCode == 201 && result['success'] == true) {
+      cart.clear();
+      
+      // FIX 4: Buka WA Admin otomatis
+      String waMsg = 'Halo Kak, saya ${_namaController.text}.\nSaya sudah order di aplikasi.\n\nOrder ID: #${result['order_id']}\nTotal: Rp ${cart.totalHarga}\n\nMohon diproses ya 🙏';
+      final waUrl = 'https://wa.me/${AppConfig.waAdmin}?text=${Uri.encodeComponent(waMsg)}';
+      if (await canLaunchUrl(Uri.parse(waUrl))) {
+        await launchUrl(Uri.parse(waUrl), mode: LaunchMode.externalApplication);
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        ); // tutup SnackBar
-      } // tutup if mounted
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    } // tutup finally
-  } // tutup _kirimOrder
+          const SnackBar(content: Text('Order berhasil! Cek WhatsApp'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
+      }
+    } else {
+      // FIX 5: Ambil pesan error dari backend
+      throw Exception(result['error'] ?? 'Server error ${res.statusCode}');
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal kirim order: $e'), backgroundColor: Colors.red),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _loading = false);
+  }
+} // tutup _kirimOrder
 
   @override
   Widget build(BuildContext context) {
