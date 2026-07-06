@@ -6,8 +6,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/cart_provider.dart';
 import '../config.dart';
 
-// TRIK SAKTI: Jika dibuild ke Web, dia membaca file web. Jika dibuild ke APK, dia membaca file stub.
-import 'checkout_audio_stub.dart' if (dart.library.js_interop) 'checkout_audio_web.dart';
+// FIX FINAl LINTAS PLATFORM: Menggunakan foundation bawaan Flutter murni
+import 'package:flutter/foundation.dart' show kIsWeb;
+// Impor ini hanya akan aktif jika dicompile ke Web, dan otomatis diabaikan di Android tanpa bikin crash
+import 'package:web/web.dart' as web if (dart.library.js_interop) 'package:web/web.dart';
 
 class HalamanCheckout extends StatefulWidget {
   const HalamanCheckout({super.key});
@@ -20,6 +22,56 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
   final _alamatController = TextEditingController();
   final _nohpController = TextEditingController();
   bool _loading = false;
+
+  // LOKAL FUNGSI: Suara ditaruh di sini agar tidak butuh file eksternal lain
+  void _pemicuAudioSukses() async {
+    // Jika aplikasi berjalan di Android APK biasa, fungsi ini langsung berhenti aman
+    if (!kIsWeb) return;
+
+    try {
+      final ctx = web.AudioContext();
+      
+      // 1. Nada Ting-Ting (Bagian Pertama)
+      final osc1 = ctx.createOscillator(); 
+      final gain1 = ctx.createGain();
+      osc1.type = 'sine'; 
+      osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc1.connect(gain1); 
+      gain1.connect(ctx.destination);
+      osc1.start(); 
+      osc1.stop(ctx.currentTime + 0.15);
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Nada Ting-Ting (Bagian Kedua)
+      final osc2 = ctx.createOscillator(); 
+      final gain2 = ctx.createGain();
+      osc2.type = 'sine'; 
+      osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
+      gain2.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc2.connect(gain2); 
+      gain2.connect(ctx.destination);
+      osc2.start(); 
+      osc2.stop(ctx.currentTime + 0.3);
+
+      await Future.delayed(const Duration(milliseconds: 400));
+
+      // 2. Asisten Google berbicara ke Pelanggan
+      final synth = web.window.speechSynthesis;
+      synth.cancel();
+      
+      final ucapan = web.SpeechSynthesisUtterance("Orderan sukses bos! Silakan klik kirim di WhatsApp ya.");
+      ucapan.lang = "id-ID";
+      ucapan.rate = 1.0;
+      synth.speak(ucapan);
+      
+    } catch (e) {
+      print('Audio web diblokir browser: \$e');
+    }
+  }
 
   Future<void> _kirimOrder() async {
     final cart = Provider.of<CartProvider>(context, listen: false);
@@ -62,9 +114,9 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
         cart.clear();
 
         // ========================================================
-        // PANGGIL FITUR AUDIO AMAN LINTAS PLATFORM
+        // PANGGIL FITUR AUDIO YANG AMAN UNTUK WEB & APK
         // ========================================================
-        putarAudioSukses();
+        _pemicuAudioSukses();
         // ========================================================
 
         String waMsg = 'Halo Kak, saya ${_namaController.text}\n'
