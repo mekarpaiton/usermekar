@@ -256,7 +256,7 @@ class _HalamanKatalogState extends State<HalamanKatalog> {
       final res = await http.get(Uri.parse('${AppConfig.baseUrl}/api/kategori'));
       final data = json.decode(res.body) as List;
       setState(() {
-        kategori = ['Semua',...data.map((e) => e['nama'].toString())];
+        kategori = ['Semua', ...data.map((e) => e['nama'].toString())];
       }); // tutup setState
     } catch (e) {
       print('Error kategori: $e');
@@ -267,8 +267,8 @@ class _HalamanKatalogState extends State<HalamanKatalog> {
     setState(() => loading = true); // tutup setState
     try {
       String url = '${AppConfig.baseUrl}/api/produk?';
-      if (search!= null && search.isNotEmpty) url += 'q=$search&';
-      if (kat!= null && kat!= 'Semua') url += 'kategori=$kat';
+      if (search != null && search.isNotEmpty) url += 'q=$search&';
+      if (kat != null && kat != 'Semua') url += 'kategori=$kat';
 
       final res = await http.get(Uri.parse(url)).timeout(Duration(seconds: 15));
       setState(() {
@@ -329,7 +329,7 @@ class _HalamanKatalogState extends State<HalamanKatalog> {
                   }, // tutup onSelected
                   selectedColor: warnaUtama,
                   labelStyle: TextStyle(
-                    color: kategoriDipilih == kategori[i]? Colors.white : Colors.black,
+                    color: kategoriDipilih == kategori[i] ? Colors.white : Colors.black,
                   ), // tutup TextStyle
                 ), // tutup ChoiceChip
               ), // tutup Padding
@@ -338,106 +338,103 @@ class _HalamanKatalogState extends State<HalamanKatalog> {
           Expanded(
             child: loading
               ? Center(child: CircularProgressIndicator())
-                : produk.isEmpty
-                  ? Center(child: Text('Produk tidak ditemukan'))
-                    : RefreshIndicator(
-                        onRefresh: () => getProduk(kat: kategoriDipilih),
-                        child: GridView.builder(
-                          padding: EdgeInsets.all(12),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.7,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                          ), // tutup SliverGridDelegateWithFixedCrossAxisCount
-                          itemCount: produk.length,
-                          itemBuilder: (ctx, i) {
-                            final p = produk[i];
+              : produk.isEmpty
+                ? Center(child: Text('Produk tidak ditemukan'))
+                : RefreshIndicator(
+                    onRefresh: () => getProduk(kat: kategoriDipilih),
+                    child: GridView.builder(
+                      padding: EdgeInsets.all(12),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.7,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ), // tutup SliverGridDelegateWithFixedCrossAxisCount
+                      itemCount: produk.length,
+                      itemBuilder: (ctx, i) {
+                        final p = produk[i];
 
-// 1. Ambil harga umum secara aman dari Map JSON server
-int hargaUmum = 0;
-var hargaUmumRaw = p['harga_umum'];
-if (hargaUmumRaw is Map) {
-  hargaUmum = hargaRaw['umum'] ?? 0;
-} else if (hargaUmumRaw is int) {
-  hargaUmum = hargaUmumRaw;
-}
+                        // FIX 1: Ubah hargaRaw menjadi hargaUmumRaw agar sesuai deklarasi data map
+                        int hargaUmum = 0;
+                        var hargaUmumRaw = p['harga_umum'];
+                        if (hargaUmumRaw is Map) {
+                          hargaUmum = hargaUmumRaw['umum'] ?? 0;
+                        } else if (hargaUmumRaw is int) {
+                          hargaUmum = hargaUmumRaw;
+                        }
 
-// 2. Format ribuan (titik) untuk tampilan Rupiah yang rapi
-String formatRibuan(int angka) => angka.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+                        // 2. Format ribuan (titik) untuk tampilan Rupiah yang rapi
+                        String formatRibuan(int angka) => angka.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
 
-// 3. Logika 2 opsi sesuai request: jika 0 munculkan peringatan pilih varian
-String hargaDisplay = hargaUmum == 0 
-    ? 'Pilih varian boss' 
-    : 'Rp ${formatRibuan(hargaUmum)} / ${p['satuan'] ?? 'sak'}';
+                        // 3. Logika 2 opsi sesuai request: jika 0 munculkan peringatan pilih varian
+                        String hargaDisplay = hargaUmum == 0 
+                            ? 'Pilih varian boss' 
+                            : 'Rp ${formatRibuan(hargaUmum)} / ${p['satuan'] ?? 'sak'}';
 
-                            return GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProdukDetailPage(produk: p), // ← ganti nama
-                                ), // tutup MaterialPageRoute
-                              ), // tutup Navigator.push
-                              child: Card(
-                                elevation: 2,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-                                        child: Image.network(
-                                          p['foto']?? '',
-                                          width: double.infinity,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (c, e, s) => Container(
-                                            color: Colors.grey[300],
-                                            child: Icon(Icons.image, size: 50),
-                                          ), // tutup Container
-                                        ), // tutup Image.network
-                                      ), // tutup ClipRRect
-                                    ), // tutup Expanded
-                                    Padding(
-                                      padding: EdgeInsets.all(8),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            p['nama'],
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                          ), // tutup Text nama
-                                          SizedBox(height: 4),
-                                          // Ubah bagian Text harga menjadi langsung memanggil hargaDisplay
-Text(
-  hargaDisplay,
-  style: TextStyle(
-    color: hargaUmum == 0 ? Colors.orange : warnaUtama, // ganti warna orange jika harus pilih varian
-    fontWeight: FontWeight.bold,
-    fontSize: hargaUmum == 0 ? 14 : 16, // sesuaikan ukuran font agar pas
-  ),
-),
-  style: TextStyle(
-                                              color: warnaUtama,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ), // tutup TextStyle
-                                          ), // tutup Text harga
-                                          Text(
-                                            'Stok: ${p['stok']}',
-                                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                                          ), // tutup Text stok
-                                        ], // tutup children Column
-                                      ), // tutup Column
-                                    ), // tutup Padding
-                                  ], // tutup children Column Card
-                                ), // tutup Column
-                              ), // tutup Card
-                            ); // tutup GestureDetector
-                          }, // tutup itemBuilder
-                        ), // tutup GridView.builder
-                      ), // tutup RefreshIndicator
+                        return GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProdukDetailPage(produk: p),
+                            ), // tutup MaterialPageRoute
+                          ), // tutup Navigator.push
+                          child: Card(
+                            elevation: 2,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                                    child: Image.network(
+                                      p['foto'] ?? '',
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) => Container(
+                                        color: Colors.grey[300],
+                                        child: Icon(Icons.image, size: 50),
+                                      ), // tutup Container
+                                    ), // tutup Image.network
+                                  ), // tutup ClipRRect
+                                ), // Expanded
+                                Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        p['nama'],
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                      ), // tutup Text nama
+                                      SizedBox(height: 4),
+                                      
+                                      // FIX 2: Teks harga dirapikan total, membuang tumpukan kode ganda penolak compile
+                                      Text(
+                                        hargaDisplay,
+                                        style: TextStyle(
+                                          color: hargaUmum == 0 ? Colors.orange : warnaUtama, 
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: hargaUmum == 0 ? 13 : 15, 
+                                        ),
+                                      ), // tutup Text harga
+                                      
+                                      SizedBox(height: 4),
+                                      Text(
+                                        'Stok: ${p['stok']}',
+                                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                      ), // tutup Text stok
+                                    ], // tutup children Column
+                                  ), // tutup Column
+                                ), // tutup Padding
+                              ], // tutup children Column Card
+                            ), // tutup Column
+                          ), // tutup Card
+                        ); // tutup GestureDetector
+                      }, // tutup itemBuilder
+                    ), // tutup GridView.builder
+                  ), // tutup RefreshIndicator
           ), // tutup Expanded
         ], // tutup children Column
       ), // tutup Column
