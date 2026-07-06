@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:js' as js; // SAKTI: Wajib ada untuk memicu suara asisten Google di browser HP pelanggan
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/cart_provider.dart';
 import '../config.dart';
@@ -52,12 +53,56 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
         }),
       ).timeout(Duration(seconds: 20));
 
-            final result = jsonDecode(res.body);
+      final result = jsonDecode(res.body);
 
       // FIX BARU: Sesuaikan dengan response server Flask yang mengirimkan 'status': 'sukses'
       if (res.statusCode == 201 && result['status'] == 'sukses') {
         final totalHarga = cart.totalHarga;
         cart.clear();
+
+        // ========================================================
+        // GABUNGAN NOTIFIKASI: ASISTEN GOOGLE + SUARA UNTUK PELANGGAN
+        // ========================================================
+        try {
+          js.context.callMethod('eval', [
+            '''
+            (function() {
+              const ctx = new (window.AudioContext || window.webkitAudioContext)();
+              
+              // 1. Efek Nada Mantap "Ting-Ting!"
+              const osc1 = ctx.createOscillator(); const gain1 = ctx.createGain();
+              osc1.type = 'sine'; osc1.frequency.setValueAtTime(523.25, ctx.currentTime);
+              gain1.gain.setValueAtTime(0.15, ctx.currentTime);
+              gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+              osc1.connect(gain1); gain1.connect(ctx.destination);
+              osc1.start(); osc1.stop(ctx.currentTime + 0.15);
+              
+              setTimeout(() => {
+                const osc2 = ctx.createOscillator(); const gain2 = ctx.createGain();
+                osc2.type = 'sine'; osc2.frequency.setValueAtTime(659.25, ctx.currentTime);
+                gain2.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc2.connect(gain2); gain2.connect(ctx.destination);
+                osc2.start(); osc2.stop(ctx.currentTime + 0.3);
+              }, 100);
+
+              // 2. Asisten Google berbicara ke Pelanggan
+              setTimeout(() => {
+                if ('speechSynthesis' in window) {
+                  window.speechSynthesis.cancel();
+                  let ucapan = new SpeechSynthesisUtterance("Orderan sukses bos! Silakan klik kirim di WhatsApp ya.");
+                  ucapan.lang = "id-ID";
+                  ucapan.rate = 1.0;
+                  window.speechSynthesis.speak(ucapan);
+                }
+              }, 500);
+            })();
+            '''
+          ]);
+        } catch (audioError) {
+          print('Gagal memutar audio pelanggan: \$audioError');
+        }
+        // ========================================================
 
         // Teks WA menggunakan '\n' agar rapi saat terbaca di WhatsApp chat
         String waMsg = 'Halo Kak, saya ${_namaController.text}\n'
