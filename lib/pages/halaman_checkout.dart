@@ -52,20 +52,23 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
         }),
       ).timeout(Duration(seconds: 20));
 
-      final result = jsonDecode(res.body);
+            final result = jsonDecode(res.body);
 
-      if (res.statusCode == 201 && result['success'] == true) {
+      // FIX BARU: Sesuaikan dengan response server Flask yang mengirimkan 'status': 'sukses'
+      if (res.statusCode == 201 && result['status'] == 'sukses') {
         final totalHarga = cart.totalHarga;
         cart.clear();
 
-        String noAdmin = AppConfig.waAdmin.replaceAll(RegExp(r'[^0-9]'), '');
-        if (!noAdmin.startsWith('62')) {
-          noAdmin = '62${noAdmin.replaceFirst(RegExp(r'^0'), '')}';
-        }
-        
-        String waMsg = 'Halo Kak, saya ${_namaController.text}%0ASaya sudah order di aplikasi Toko Bangunan Mekar.%0A%0AOrder ID: *#${result['order_id']}*%0ATotal: *Rp $totalHarga*%0A%0AMohon diproses ya 🙏';
-        final waUrl = 'https://wa.me/$noAdmin?text=$waMsg';
-        
+        // Teks WA menggunakan '\n' agar rapi saat terbaca di WhatsApp chat
+        String waMsg = 'Halo Kak, saya ${_namaController.text}\n'
+            'Saya sudah order di aplikasi Toko Bangunan Mekar.\n\n'
+            'Order ID: *#${result['order_id']}*\n'
+            'Total: *Rp ${totalHarga.toInt()}*\n\n'
+            'Mohon diproses ya 🙏';
+
+        // FIX BARU: Langsung panggil fungsi encoder bawaan dari AppConfig kamu biar aman
+        final waUrl = AppConfig.linkWaPesan(waMsg);
+
         try {
           await launchUrl(Uri.parse(waUrl), mode: LaunchMode.externalApplication);
         } catch (e) {
