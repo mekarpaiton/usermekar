@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:js_interop'; // FIX: Menggunakan interop modern agar lolos compile Wasm di GitHub Actions
+import 'dart:js_interop'; // Tetap pakai ini untuk standar modern
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/cart_provider.dart';
 import '../config.dart';
+
+// FIX AMPUH: Daftarkan fungsi global eval JS secara formal agar compiler web tidak komplain
+@JS('eval')
+external void eksekusiJs(JSString script);
 
 class HalamanCheckout extends StatefulWidget {
   const HalamanCheckout({super.key});
@@ -55,7 +59,6 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
 
       final result = jsonDecode(res.body);
 
-      // FIX BARU: Sesuaikan dengan response server Flask yang mengirimkan 'status': 'sukses'
       if (res.statusCode == 201 && result['status'] == 'sukses') {
         final totalHarga = cart.totalHarga;
         cart.clear();
@@ -98,22 +101,20 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
             })();
           ''';
 
-          // Eksekusi kode lewat globalContext eval bawaan dart:js_interop (Aman untuk build Web/Wasm)
-          (globalContext['eval'] as JSFunction).call(null, jsCode.toJS);
+          // FIX TOTAL: Sekarang tinggal dipanggil lewat fungsi eksekusiJs yang legal dan aman
+          eksekusiJs(jsCode.toJS);
           
         } catch (audioError) {
           print('Gagal memutar audio pelanggan: \$audioError');
         }
         // ========================================================
 
-        // Teks WA menggunakan '\n' agar rapi saat terbaca di WhatsApp chat
         String waMsg = 'Halo Kak, saya ${_namaController.text}\n'
             'Saya sudah order di aplikasi Toko Bangunan Mekar.\n\n'
             'Order ID: *#${result['order_id']}*\n'
             'Total: *Rp ${totalHarga.toInt()}*\n\n'
             'Mohon diproses ya 🙏';
 
-        // FIX BARU: Langsung panggil fungsi encoder bawaan dari AppConfig kamu biar aman
         final waUrl = AppConfig.linkWaPesan(waMsg);
 
         try {
