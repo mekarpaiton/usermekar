@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../providers/cart_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config.dart';
 
 class HalamanCheckout extends StatefulWidget {
@@ -17,7 +18,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
   final _nohpController = TextEditingController();
   bool _loading = false;
 
-  import 'package:url_launcher/url_launcher.dart'; // tambah ini di atas
+ 
 
 Future<void> _kirimOrder() async {
   final cart = Provider.of<CartProvider>(context, listen: false);
