@@ -353,7 +353,24 @@ class _HalamanKatalogState extends State<HalamanKatalog> {
                           itemCount: produk.length,
                           itemBuilder: (ctx, i) {
                             final p = produk[i];
-                            final harga = p['harga_umum']?? 0;
+
+// 1. Ambil harga umum secara aman dari Map JSON server
+int hargaUmum = 0;
+var hargaUmumRaw = p['harga_umum'];
+if (hargaUmumRaw is Map) {
+  hargaUmum = hargaRaw['umum'] ?? 0;
+} else if (hargaUmumRaw is int) {
+  hargaUmum = hargaUmumRaw;
+}
+
+// 2. Format ribuan (titik) untuk tampilan Rupiah yang rapi
+String formatRibuan(int angka) => angka.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+
+// 3. Logika 2 opsi sesuai request: jika 0 munculkan peringatan pilih varian
+String hargaDisplay = hargaUmum == 0 
+    ? 'Pilih varian boss' 
+    : 'Rp ${formatRibuan(hargaUmum)} / ${p['satuan'] ?? 'sak'}';
+
                             return GestureDetector(
                               onTap: () => Navigator.push(
                                 context,
@@ -392,9 +409,16 @@ class _HalamanKatalogState extends State<HalamanKatalog> {
                                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                                           ), // tutup Text nama
                                           SizedBox(height: 4),
-                                          Text(
-                                            'Rp ${harga.toString()} /${p['satuan']}',
-                                            style: TextStyle(
+                                          // Ubah bagian Text harga menjadi langsung memanggil hargaDisplay
+Text(
+  hargaDisplay,
+  style: TextStyle(
+    color: hargaUmum == 0 ? Colors.orange : warnaUtama, // ganti warna orange jika harus pilih varian
+    fontWeight: FontWeight.bold,
+    fontSize: hargaUmum == 0 ? 14 : 16, // sesuaikan ukuran font agar pas
+  ),
+),
+  style: TextStyle(
                                               color: warnaUtama,
                                               fontWeight: FontWeight.bold,
                                               fontSize: 16,
