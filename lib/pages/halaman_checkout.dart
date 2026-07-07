@@ -21,7 +21,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
   final _nohpController = TextEditingController();
   bool _loading = false;
 
-  Future<void> _kirimOrder() async {
+    Future<void> _kirimOrder() async {
     final cart = Provider.of<CartProvider>(context, listen: false);
     if (cart.items.isEmpty) return;
 
@@ -39,26 +39,26 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
         Uri.parse('${AppConfig.baseUrl}/api/orders'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-  'nama_pembeli': _namaController.text,
-  'wa_pembeli': _nohpController.text,
-  'alamat': _alamatController.text,
-  'total': cart.totalHarga,
-  'ongkir': 0,
-  'items': cart.items.values.map((e) => {
-    'id': e.idProduk,
-    'nama': e.namaLengkap,
-    'harga': e.harga,
-    'qty': e.jumlah,
-    // JIKA VARIAN NULL ATAU KOSONG, KASIH STRING "Umum" ATAU "" AGAR FLASK/WA TIDAK EROR
-    'varian': (e.varian == null || e.varian.toString().trim().isEmpty) ? "Umum" : e.varian,
-    'gambar': e.gambar,
-  }).toList(),
+          'nama_pembeli': _namaController.text,
+          'wa_pembeli': _nohpController.text,
+          'alamat': _alamatController.text,
+          'total': cart.totalHarga,
+          'ongkir': 0,
+          'items': cart.items.values.map((e) => {
+            'id': e.idProduk,
+            'nama': e.namaLengkap,
+            'harga': e.harga,
+            'qty': e.jumlah,
+            'varian': (e.varian == null || e.varian.toString().trim().isEmpty) ? "Umum" : e.varian,
+            'gambar': e.gambar,
+          }).toList(),
         }),
       ).timeout(Duration(seconds: 20));
 
       final result = jsonDecode(res.body);
 
-      If (res.statusCode == 201 && result['status'] == 'sukses') {
+      // FIX UTAMA: Menggunakan 'if' huruf kecil murni
+      if (res.statusCode == 201 && result['status'] == 'sukses') {
         final totalHarga = cart.totalHarga;
         cart.clear(); // 1. Keranjang langsung dibersihkan
 
@@ -79,7 +79,6 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
 
         // ========================================================
         // 3. TUTUP HALAMAN CHECKOUT SEKARANG JUGA (KEMBALI KE KATALOG)
-        // Ini mengunci posisi katalog lama agar TIDAK RE-RESET / RELOAD
         // ========================================================
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -89,21 +88,21 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
         }
 
         // ========================================================
-        // 4. JEDA 1 DETIK, LALU BUKA WA DI NEW TAB (TAB BARU TERPISAH)
+        // 4. JEDA 1 DETIK, LALU BUKA WA DI TAB BARU (NEW TAB)
         // ========================================================
         Future.delayed(const Duration(seconds: 1), () async {
           try {
             await launchUrl(
               Uri.parse(waUrl), 
-              mode: LaunchMode.webOnlyWindowNewTab, // Jaminan buka di tab baru browser!
+              mode: LaunchMode.platformDefault, // Aman untuk semua versi url_launcher di web untuk buka tab baru
             );
           } catch (e) {
-            print('Error buka WA di tab baru: $e');
+            print('Error buka WA: $e');
           }
         });
 
       } else {
-   throw Exception(result['error'] ?? 'Server error ${res.statusCode}');
+        throw Exception(result['error'] ?? 'Server error ${res.statusCode}');
       }
     } catch (e) {
       if (mounted) {
@@ -115,6 +114,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
       if (mounted) setState(() => _loading = false);
     }
   } // tutup _kirimOrder
+
 
   @override
   Widget build(BuildContext context) {
