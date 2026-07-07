@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../providers/cart_provider.dart';
 import '../config.dart';
 
+// Helper biar aman
 int safeInt(dynamic v) {
   if (v == null) return 0;
   if (v is int) return v;
@@ -15,7 +16,7 @@ int safeInt(dynamic v) {
 String formatTotal(int n) => n.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
 
 class ProdukDetailPage extends StatefulWidget {
-  final Map produk; 
+  final Map produk; // data dari API
   const ProdukDetailPage({super.key, required this.produk});
 
   @override
@@ -23,7 +24,7 @@ class ProdukDetailPage extends StatefulWidget {
 }
 
 class _ProdukDetailPageState extends State<ProdukDetailPage> {
-  Map? varianDipilih; 
+  Map? varianDipilih; // null kalau nggak ada varian
 
   @override
   void initState() {
@@ -40,37 +41,42 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
     final List varianList = widget.produk['varian'] ?? [];
     final bool adaVarian = varianList.isNotEmpty;
 
-    // AMANKAN LINK FOTO (Menyesuaikan dengan HalamanKatalog)
+    // Amankan link foto dari katalog ('foto')
     String linkFoto = widget.produk['foto'] ?? widget.produk['gambar'] ?? '';
 
+    // ========================================================
+    // SINKRONISASI LOGIKA HARGA DENGAN KATALOG UTAMA
+    // ========================================================
     int hargaUmum = 0;
     var hargaUmumRaw = widget.produk['harga_umum'];
 
     if (hargaUmumRaw is String) {
       try {
         hargaUmumRaw = jsonDecode(hargaUmumRaw);
-      } catch (e) {
-        hargaUmumRaw = null;
-      }
+      } catch (_) {}
     }
 
-    if (hargaUmumRaw is Map && hargaUmumRaw['umum'] != null) {
+    if (hargaUmumRaw is Map) {
       hargaUmum = safeInt(hargaUmumRaw['umum']);
-    } else {
+    } else if (hargaUmumRaw != null && hargaUmumRaw is! Map) {
+      // JIKA LANGSUNG ANGKA MURNI (Sama seperti logika di Katalog)
+      hargaUmum = safeInt(hargaUmumRaw);
+    }
+
+    // Jika harga_umum masih 0, ambil fallback dari key 'harga'
+    if (hargaUmum == 0) {
       hargaUmum = safeInt(widget.produk['harga']);
     }
 
+    // Tentukan harga yang akan ditampilkan dan dikirim ke keranjang
     int hargaTampil = 0;
     if (adaVarian) {
-      if (varianDipilih != null) {
-        hargaTampil = safeInt(varianDipilih!['harga']);
-      } else {
-        hargaTampil = 0; 
-      }
+      hargaTampil = varianDipilih != null ? safeInt(varianDipilih!['harga']) : 0;
     } else {
       hargaTampil = hargaUmum;
     }
 
+    // String buat tampilin harga ke pembeli
     String hargaDisplay;
     String satuan = widget.produk['satuan']?.toString() ?? 'pcs';
     if (adaVarian && varianDipilih == null) {
@@ -81,11 +87,16 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
       hargaDisplay = 'Rp ${formatTotal(hargaTampil)} / $satuan';
     }
 
+    // ========================================================
+    // FIX DEWA: PAKSA TOMBOL ORANJE JIKA PRODUK KATALOG UMUM
+    // ========================================================
     bool tombolAktif = false;
     if (adaVarian) {
-      tombolAktif = (varianDipilih != null && hargaTampil > 0);
+      // Jika bervarian, tombol aktif kalau sudah diklik variannya
+      tombolAktif = (varianDipilih != null);
     } else {
-      tombolAktif = (hargaTampil > 0);
+      // JIKA PRODUK UMUM, UTAMAKAN SELALU AKTIF (TRUE)!
+      tombolAktif = true; 
     }
 
     return Scaffold(
@@ -99,7 +110,7 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
             child: ListView(
               children: [
                 Image.network(
-                  linkFoto, // GANTI DI SINI BIAR KELUAR GAMBARNYA
+                  linkFoto,
                   height: 250,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -152,18 +163,24 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
             ),
           ),
 
+          // Tombol Tambah ke Keranjang
           Container(
             padding: const EdgeInsets.all(16),
             width: double.infinity,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
-              label: const Text('Tambah ke Keranjang', style: TextStyle(color: Colors.white)),
+              label: const Text('Tambah ke Keranjang', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              // Logika OnPressed dikunci berdasarkan status tombolAktif
               onPressed: !tombolAktif ? null : () {
+                // Pengaman ganda: jika karena satu hal hargaTampil terbaca 0, 
+                // kita ambil paksa dari nominal backup hargaUmum atau widget.produk['harga']
+                int hargaFinal = (hargaTampil == 0) ? (hargaUmum > 0 ? hargaUmum : safeInt(widget.produk['harga'])) : hargaTampil;
+
                 cart.addItem(
                   widget.produk['id'].toString(),
                   widget.produk['nama'],
-                  hargaTampil,
-                  linkFoto, // Gunakan link foto yang valid
+                  hargaFinal,
+                  linkFoto,
                   varian: adaVarian ? varianDipilih!['nama'] : "Umum",
                 );
 
@@ -177,7 +194,8 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                // Mengikuti perintah boss: PAKSA ORANGE jika tombolAktif bernilai true
+                backgroundColor: tombolAktif ? Colors.orange : Colors.grey[400],
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
