@@ -25,16 +25,22 @@ class CartProvider with ChangeNotifier {
     String namaProduk,
     int harga,
     String gambar, {
-    String? varian, // ← parameter baru
+    String? varian, // parameter opsional
   }) {
+    // ====================================================================
+    // FIX UTAMA: Jaminan jika varian null atau kosong, paksa jadi "Umum"
+    // ====================================================================
+    final String namaVarianFix = (varian == null || varian.trim().isEmpty) ? "Umum" : varian;
+
     final itemBaru = CartItem(
       idProduk: idProduk,
       namaProduk: namaProduk,
-      varian: varian,
+      varian: namaVarianFix, // Gunakan varian yang sudah aman
       harga: harga,
       gambar: gambar,
     ); // tutup CartItem
 
+    // Gunakan itemBaru.cartId yang sekarang dijamin tidak akan bernilai null/rusak
     if (_items.containsKey(itemBaru.cartId)) {
       _items.update(itemBaru.cartId, (item) => CartItem(
         idProduk: item.idProduk,
