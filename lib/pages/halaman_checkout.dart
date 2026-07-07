@@ -58,18 +58,16 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
 
       final result = jsonDecode(res.body);
 
-      if (res.statusCode == 201 && result['status'] == 'sukses') {
+      If (res.statusCode == 201 && result['status'] == 'sukses') {
         final totalHarga = cart.totalHarga;
-        cart.clear();
+        cart.clear(); // 1. Keranjang langsung dibersihkan
 
         // ========================================================
-        // SOLUSI DEWA: Panggil fungsi JS yang kita tanam di index.html
-        // Aman 100% di Android APK (diabaikan) dan berjalan lancar di Web Browser
+        // 2. BUNYIKAN SUARA DULUAN SELAGI HALAMAN MASIH FOKUS
         // ========================================================
         try {
           await launchUrlString("javascript:typeof window.pemicuSuaraSukses === 'function' && window.pemicuSuaraSukses();");
         } catch (_) {}
-        // ========================================================
 
         String waMsg = 'Halo Kak, saya ${_namaController.text}\n'
             'Saya sudah order di aplikasi Toko Bangunan Mekar.\n\n'
@@ -79,20 +77,33 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
 
         final waUrl = AppConfig.linkWaPesan(waMsg);
 
-        try {
-          await launchUrl(Uri.parse(waUrl), mode: LaunchMode.externalApplication);
-        } catch (e) {
-          print('Error buka WA: $e');
-        }
-
+        // ========================================================
+        // 3. TUTUP HALAMAN CHECKOUT SEKARANG JUGA (KEMBALI KE KATALOG)
+        // Ini mengunci posisi katalog lama agar TIDAK RE-RESET / RELOAD
+        // ========================================================
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Order berhasil! Cek WhatsApp'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Order berhasil! Mengalihkan ke WhatsApp...'), backgroundColor: Colors.green),
           );
-          Navigator.pop(context);
+          Navigator.pop(context); // Langsung balik ke katalog utama
         }
+
+        // ========================================================
+        // 4. JEDA 1 DETIK, LALU BUKA WA DI NEW TAB (TAB BARU TERPISAH)
+        // ========================================================
+        Future.delayed(const Duration(seconds: 1), () async {
+          try {
+            await launchUrl(
+              Uri.parse(waUrl), 
+              mode: LaunchMode.webOnlyWindowNewTab, // Jaminan buka di tab baru browser!
+            );
+          } catch (e) {
+            print('Error buka WA di tab baru: $e');
+          }
+        });
+
       } else {
-        throw Exception(result['error'] ?? 'Server error ${res.statusCode}');
+   throw Exception(result['error'] ?? 'Server error ${res.statusCode}');
       }
     } catch (e) {
       if (mounted) {
