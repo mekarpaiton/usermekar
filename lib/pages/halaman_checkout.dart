@@ -38,20 +38,21 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
       final res = await http.post(
         Uri.parse('${AppConfig.baseUrl}/api/orders'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'nama_pembeli': _namaController.text,
-          'wa_pembeli': _nohpController.text,
-          'alamat': _alamatController.text,
-          'total': cart.totalHarga,
-          'ongkir': 0,
-          'items': cart.items.values.map((e) => {
-            'id': e.idProduk,
-            'nama': e.namaLengkap,
-            'harga': e.harga,
-            'qty': e.jumlah,
-            'varian': e.varian,
-            'gambar': e.gambar,
-          }).toList(),
+        body: body: jsonEncode({
+  'nama_pembeli': _namaController.text,
+  'wa_pembeli': _nohpController.text,
+  'alamat': _alamatController.text,
+  'total': cart.totalHarga,
+  'ongkir': 0,
+  'items': cart.items.values.map((e) => {
+    'id': e.idProduk,
+    'nama': e.namaLengkap,
+    'harga': e.harga,
+    'qty': e.jumlah,
+    // JIKA VARIAN NULL ATAU KOSONG, KASIH STRING "Umum" ATAU "" AGAR FLASK/WA TIDAK EROR
+    'varian': (e.varian == null || e.varian.toString().trim().isEmpty) ? "Umum" : e.varian,
+    'gambar': e.gambar,
+  }).toList(),
         }),
       ).timeout(Duration(seconds: 20));
 
