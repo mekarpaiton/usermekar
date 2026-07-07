@@ -1,8 +1,8 @@
 class CartItem {
-  final String idProduk; // id produk asli
+  final String idProduk; 
   final String namaProduk; 
-  final String? varian; // "40kg", "50kg", null kalau nggak ada varian
-  final int harga; // harga varian yg dipilih, atau harga umum
+  final String? varian; 
+  final int harga; 
   final String gambar;
   int jumlah;
 
@@ -15,10 +15,10 @@ class CartItem {
     this.jumlah = 1,
   });
 
-  // ID unik di cart = idProduk + varian. Biar 40kg & 50kg kehitung beda item
-  String get cartId => varian == null? idProduk : '${idProduk}_$varian';
+  // FIX: Jamin pencocokan ID Cart tetap konsisten lintas platform
+  String get cartId => (varian == null || varian == 'Umum') ? idProduk : '${idProduk}_$varian';
 
-  String get namaLengkap => varian == null? namaProduk : '$namaProduk - $varian';
+  String get namaLengkap => (varian == null || varian == 'Umum') ? namaProduk : '$namaProduk - $varian';
 
   Map<String, dynamic> toJson() => {
     'id': idProduk,
@@ -27,4 +27,4 @@ class CartItem {
     'gambar': gambar,
     'jumlah': jumlah,
   };
-} // tutup CartItem
+}
