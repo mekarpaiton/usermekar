@@ -36,7 +36,7 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
     }
   } // tutup initState
 
-  @override
+    @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context, listen: false);
     final List varianList = widget.produk['varian'] ?? [];
@@ -61,18 +61,41 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
       hargaUmum = safeInt(widget.produk['harga']);
     }
 
-    // Harga yg ditampilin = harga varian kalau ada, kalau nggak pake harga umum
-    final int hargaTampil = adaVarian ? safeInt(varianDipilih!['harga']) : hargaUmum;
+    // ========================================================
+    // FIX LOGIKA HARGA: Amankan kondisi jika varian belum dipilih
+    // ========================================================
+    int hargaTampil = 0;
+    if (adaVarian) {
+      if (varianDipilih != null) {
+        hargaTampil = safeInt(varianDipilih!['harga']);
+      } else {
+        hargaTampil = 0; // Set 0 agar memicu teks 'klik pilih varian'
+      }
+    } else {
+      hargaTampil = hargaUmum;
+    }
 
-    // FIX: String buat tampilin harga dengan logic baru
+    // String buat tampilin harga dengan logic baru
     String hargaDisplay;
     String satuan = widget.produk['satuan']?.toString() ?? 'pcs';
-    if (adaVarian && hargaUmum == 0) {
-      hargaDisplay = 'klik pilih varian'; // ← UDAH GANTI
+    if (adaVarian && varianDipilih == null) {
+      hargaDisplay = 'klik pilih varian'; 
     } else if (hargaTampil == 0) {
       hargaDisplay = 'Hubungi Admin';
     } else {
       hargaDisplay = 'Rp ${formatTotal(hargaTampil)} / $satuan';
+    }
+
+    // ========================================================
+    // FIX SYARAT TOMBOL: Kunci status tombol aktif atau mati
+    // ========================================================
+    bool tombolAktif = false;
+    if (adaVarian) {
+      // Kalau ada varian, tombol hanya aktif jika user sudah memilih salah satu varian
+      tombolAktif = (varianDipilih != null && hargaTampil > 0);
+    } else {
+      // Kalau produk umum, tombol langsung aktif selama harga umumnya di atas 0
+      tombolAktif = (hargaTampil > 0);
     }
 
     return Scaffold(
@@ -102,7 +125,6 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
                         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      // FIX: Pake hargaDisplay yg udah diolah
                       Text(
                         hargaDisplay,
                         style: const TextStyle(fontSize: 20, color: Colors.orange, fontWeight: FontWeight.w600),
@@ -121,7 +143,7 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
                               label: Text(varian['nama']),
                               selected: dipilih,
                               onSelected: (s) {
-                                setState(() => varianDipilih = varian);
+                                setState(() => varianDipilih = s ? varian : null);
                               },
                               selectedColor: Colors.orange,
                               labelStyle: TextStyle(color: dipilih ? Colors.white : Colors.black),
@@ -147,27 +169,29 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
             width: double.infinity,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.add_shopping_cart),
-              label: const Text('Tambah ke Keranjang'),
-              // FIX: Disable tombol kalo harga 0 atau ada varian tapi belum dipilih
-              onPressed: (hargaTampil == 0) ? null : () {
+              label: const Text('Tambah ke Keranjang', style: TextStyle(color: Colors.white)),
+              // MENGGUNAKAN LOGIKA BARU YANG SUDAH DIKUNCI AMAN
+              onPressed: !tombolAktif ? null : () {
                 cart.addItem(
                   widget.produk['id'].toString(),
                   widget.produk['nama'],
                   hargaTampil,
                   widget.produk['gambar'],
-                  varian: adaVarian ? varianDipilih!['nama'] : null,
+                  varian: adaVarian ? varianDipilih!['nama'] : "Umum",
                 );
 
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${widget.produk['nama']} ditambah'),
+                    content: Text('${widget.produk['nama']} ditambah ke keranjang'),
+                    backgroundColor: Colors.green,
                     duration: const Duration(seconds: 1),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                // Jika tombol nonaktif, otomatis jadi abu-abu bawaan Flutter, jika aktif menyala oranye
+                backgroundColor: tombolAktif ? Colors.orange : Colors.grey[300],
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
