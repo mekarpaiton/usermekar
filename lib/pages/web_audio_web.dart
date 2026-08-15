@@ -1,5 +1,4 @@
-// lib/pages/web_audio_web.dart - FIX FINAL NO ERROR WASM
-import 'dart:js_interop';
+// lib/pages/web_audio_web.dart - FIX FINAL ANTI ERROR 100%
 import 'package:web/web.dart' as web;
 
 void registerWebAudio() {}
@@ -12,6 +11,7 @@ void putarAudioSukses() {
     }
     final now = ctx.currentTime;
 
+    // TING 1
     final o1 = ctx.createOscillator();
     o1.type = 'sine';
     o1.frequency.setValueAtTime(523.25, now);
@@ -23,6 +23,7 @@ void putarAudioSukses() {
     o1.start();
     o1.stop(now + 0.15);
 
+    // TING 2
     final o2 = ctx.createOscillator();
     o2.type = 'sine';
     o2.frequency.setValueAtTime(659.25, now + 0.12);
@@ -34,20 +35,18 @@ void putarAudioSukses() {
     o2.start(now + 0.12);
     o2.stop(now + 0.42);
 
-    // FIX PALING PENTING - FORMAT BARU PACKAGE:WEB
-    web.window.setTimeout(
-      (() {
-        try {
-          final synth = web.window.speechSynthesis;
-          synth.cancel();
-          final ucapan = web.SpeechSynthesisUtterance(
-              "Orderan sukses bos! Silakan klik kirim di WhatsApp ya.");
-          ucapan.lang = "id-ID";
-          synth.speak(ucapan);
-        } catch (_) {}
-      }).toJS,
-      500,
-    );
+    // GANTI setTimeout PAKAI Future.delayed - ANTI ERROR JSAny
+    Future.delayed(const Duration(milliseconds: 500), () {
+      try {
+        final synth = web.window.speechSynthesis;
+        synth.cancel();
+        final ucapan = web.SpeechSynthesisUtterance(
+            "Orderan sukses bos! Silakan klik kirim di WhatsApp ya.");
+        ucapan.lang = "id-ID";
+        synth.speak(ucapan);
+      } catch (_) {}
+    });
+
   } catch (e) {
     // silent
   }
