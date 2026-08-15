@@ -1,17 +1,17 @@
 name: usermekar
-description: "Aplikasi User TB. MEKAR"
+description: "Aplikasi User TB. MEKAR - PAITON"
 publish_to: 'none' 
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
-  sdk: ^3.12.0
+  sdk: ">=3.4.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0
-  provider: ^6.1.2      # Buat keranjang
-  url_launcher: ^6.3.0  # Buat buka WA
+  provider: ^6.1.2
+  url_launcher: ^6.2.5
   badges: ^3.1.2
   flutter_native_splash: ^2.4.0
   flutter_launcher_icons: ^0.13.1  
@@ -19,20 +19,21 @@ dependencies:
   shared_preferences: ^2.2.3
   intl: ^0.19.0
   share_plus: ^8.0.0
-  web: ^1.1.0
+  web: ^0.5.1
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/logomekar.png
+    - assets/images/logomekar.svg
     - assets/images/splashmekar.png
 
-# Config Icon APK
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
@@ -41,7 +42,6 @@ flutter_launcher_icons:
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/images/logomekar.png"
 
-# Config Splash Screen
 flutter_native_splash:
   color: "#FFFFFF"
   image: assets/images/splashmekar.png
