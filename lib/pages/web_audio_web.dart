@@ -1,4 +1,5 @@
-// FIX WASM - TANPA JSAny, TANPA @JSExport, 100% COMPATIBLE
+// lib/pages/web_audio_web.dart - FIX FINAL NO ERROR WASM
+import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 
 void registerWebAudio() {}
@@ -33,20 +34,22 @@ void putarAudioSukses() {
     o2.start(now + 0.12);
     o2.stop(now + 0.42);
 
-    // FIX: setTimeout yang bener gak pakai toJS, 500
-    web.window.setTimeout(() {
-      try {
-        final synth = web.window.speechSynthesis;
-        synth.cancel();
-        final ucapan = web.SpeechSynthesisUtterance("Orderan sukses bos! Silakan klik kirim di WhatsApp ya.");
-        ucapan.lang = "id-ID";
-        ucapan.rate = 1.0;
-        synth.speak(ucapan);
-      } catch (_) {}
-    }.toJS, 500);
-
+    // FIX PALING PENTING - FORMAT BARU PACKAGE:WEB
+    web.window.setTimeout(
+      (() {
+        try {
+          final synth = web.window.speechSynthesis;
+          synth.cancel();
+          final ucapan = web.SpeechSynthesisUtterance(
+              "Orderan sukses bos! Silakan klik kirim di WhatsApp ya.");
+          ucapan.lang = "id-ID";
+          synth.speak(ucapan);
+        } catch (_) {}
+      }).toJS,
+      500,
+    );
   } catch (e) {
-    print('Audio error: $e');
+    // silent
   }
 }
 
