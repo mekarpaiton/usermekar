@@ -7,93 +7,60 @@ class CartProvider with ChangeNotifier {
 
   int get totalItem {
     int total=0;
-    _items.forEach((key,item)=>total+=item.jumlah);
+    _items.forEach((k,v)=>total+=v.jumlah);
     return total;
   }
-
-  // totalHarga jadi int biar enak di checkout
   int get totalHarga {
     int total=0;
-    _items.forEach((key,item)=>total+=item.harga*item.jumlah);
+    _items.forEach((k,v)=>total+=v.harga * v.jumlah);
     return total;
   }
 
   void addItem(String idProduk, String namaProduk, int harga, String gambar, {String? varian}) {
-    final String namaVarianFix = (varian == null || varian.trim().isEmpty)? "Umum" : varian;
-    final itemBaru = CartItem(idProduk: idProduk, namaProduk: namaProduk, varian: namaVarianFix, harga: harga, gambar: gambar);
-    if (_items.containsKey(itemBaru.cartId)) {
-      _items.update(itemBaru.cartId, (item) => CartItem(idProduk: item.idProduk, namaProduk: item.namaProduk, varian: item.varian, harga: item.harga, gambar: item.gambar, jumlah: item.jumlah+1));
+    final fixVarian = (varian==null || varian.trim().isEmpty)? "Umum" : varian;
+    final baru = CartItem(idProduk: idProduk, namaProduk: namaProduk, varian: fixVarian, harga: harga, gambar: gambar, jumlah: 1);
+    if (_items.containsKey(baru.cartId)) {
+      _items[baru.cartId]!.jumlah++;
     } else {
-      _items.putIfAbsent(itemBaru.cartId, () => itemBaru);
+      _items[baru.cartId] = baru;
     }
     notifyListeners();
   }
 
-  // buat kompatibilitas sama kode checkout lama yang manggil tambah(produk)
+  // buat kompatibel sama kode lama yang manggil tambah(produk Map)
   void tambah(dynamic produk) {
     try {
       String id = produk['id'].toString();
       String nama = produk['nama'].toString();
-      int harga = 0;
-      try { harga = int.parse('${produk['harga_umum']?? produk['harga']?? 0}'); } catch(_){ harga = produk['harga'] is int? produk['harga'] : 0; }
+      int harga = int.tryParse('${produk['harga_umum']??produk['harga']??0}')??0;
       String foto = produk['foto']??'';
       addItem(id, nama, harga, foto);
-    } catch(e) {
-      print('tambah error $e');
-    }
-  }
-
-  void removeSingleItem(String cartId) {
-    if (!_items.containsKey(cartId)) return;
-    if (_items[cartId]!.jumlah>1) {
-      _items.update(cartId, (item) => CartItem(idProduk: item.idProduk, namaProduk: item.namaProduk, varian: item.varian, harga: item.harga, gambar: item.gambar, jumlah: item.jumlah-1));
-    } else { _items.remove(cartId); }
-    notifyListeners();
+    } catch(e){ print(e); }
   }
 
   void kurangi(dynamic idOrCartId) {
     String key = idOrCartId.toString();
-    // cari yang cocok, bisa idProduk atau cartId
-    if (_items.containsKey(key)) {
-      removeSingleItem(key);
-      return;
+    String? target;
+    if (_items.containsKey(key)) target=key;
+    else _items.forEach((k,v){ if(v.idProduk==key) target=k; });
+    if (target!=null) {
+      if (_items[target]!.jumlah>1) _items[target]!.jumlah--;
+      else _items.remove(target);
+      notifyListeners();
     }
-    // cari by idProduk
-    String? foundKey;
-    _items.forEach((k,v){ if(v.idProduk==key) foundKey=k; });
-    if (foundKey!=null) removeSingleItem(foundKey!);
   }
 
-  void removeItem(String cartId) { _items.remove(cartId); notifyListeners(); }
-  void clear() { _items={}; notifyListeners(); }
-
-  // INI YANG KAMU MAU: EDIT INPUT LANGSUNG KETIK ANGKA
   void setQty(dynamic idOrCartId, int newQty) {
     String key = idOrCartId.toString();
-    String? targetKey;
-
-    if (_items.containsKey(key)) {
-      targetKey = key;
-    } else {
-      // cari by idProduk
-      _items.forEach((k,v){ if(v.idProduk==key) targetKey=k; });
-    }
-
-    if (targetKey==null) return;
-
-    if (newQty <= 0) {
-      _items.remove(targetKey);
-    } else {
-      final old = _items[targetKey]!;
-      _items[targetKey] = CartItem(
-        idProduk: old.idProduk,
-        namaProduk: old.namaProduk,
-        varian: old.varian,
-        harga: old.harga,
-        gambar: old.gambar,
-        jumlah: newQty,
-      );
-    }
+    String? target;
+    if (_items.containsKey(key)) target=key;
+    else _items.forEach((k,v){ if(v.idProduk==key) target=k; });
+    if (target==null) return;
+    if (newQty<=0) _items.remove(target);
+    else _items[target]!.jumlah = newQty;
     notifyListeners();
   }
+
+  void removeItem(String cartId){ _items.remove(cartId); notifyListeners(); }
+  void clear(){ _items={}; notifyListeners(); }
 }
