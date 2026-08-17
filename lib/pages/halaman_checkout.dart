@@ -20,11 +20,14 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
 
   String fmt(int a) => a.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
 
-  TextEditingController _getCtrl(String id, int qty) {
-    if (!_qtyCtrls.containsKey(id)) {
-      _qtyCtrls[id] = TextEditingController(text: qty.toString());
+  TextEditingController _getCtrl(String cartId, int jumlah) {
+    if (!_qtyCtrls.containsKey(cartId)) {
+      _qtyCtrls[cartId] = TextEditingController(text: jumlah.toString());
+    } else if (_qtyCtrls[cartId]!.text!= jumlah.toString()) {
+      // kalau ada update dari provider, sync
+      _qtyCtrls[cartId]!.text = jumlah.toString();
     }
-    return _qtyCtrls[id]!;
+    return _qtyCtrls[cartId]!;
   }
 
   Future<void> kirim() async {
@@ -34,16 +37,13 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
       return;
     }
     setState(() => _loading = true);
-    final items = cart.items.values.map((e) => {'id': e.produk['id'], 'nama': e.produk['nama'], 'qty': e.qty, 'harga': e.harga}).toList();
+    final items = cart.items.values.map((e) => {'id': e.idProduk, 'nama': '${e.namaProduk} ${e.varian}', 'qty': e.jumlah, 'harga': e.harga}).toList();
     final body = {'nama_pembeli': _nama.text.trim(), 'wa': _wa.text.trim(), 'alamat': _alamat.text.trim(), 'items': items, 'total': cart.totalHarga};
 
     try {
-      final res = await http.post(Uri.parse('${AppConfig.baseUrl}/api/orders'),
+      await http.post(Uri.parse('${AppConfig.baseUrl}/api/orders'),
           headers: {'Content-Type':'application/json'}, body: json.encode(body)).timeout(const Duration(seconds: 12));
-      print('ORDER RES ${res.statusCode} ${res.body}'); // biar ketauan kalau masih 200 error
-    } catch (e) {
-      print('ORDER ERR $e');
-    }
+    } catch (_) {}
 
     final detail = items.map((e) => "- ${e['nama']} x${e['qty']}").join('\n');
     final pesan = "Halo TB MEKAR mau pesan:\n$detail\nTotal Rp ${fmt(cart.totalHarga)}\nNama: ${_nama.text}\nAlamat: ${_alamat.text}\nWA: ${_wa.text}";
@@ -64,27 +64,26 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8E1),
-      appBar: AppBar(title: const Text('Checkout'), backgroundColor: const Color(0xFF4A148C), foregroundColor: Colors.white, centerTitle: true),
+      appBar: AppBar(title: const Text('Checkout'), backgroundColor: const Color(0xFF4A148C), foregroundColor: Colors.white),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-         ...cart.items.values.map((e) {
-            final ctrl = _getCtrl(e.produk['id'].toString(), e.qty);
+        ...cart.items.entries.map((entry) {
+            final cartId = entry.key;
+            final e = entry.value;
+            final ctrl = _getCtrl(cartId, e.jumlah);
             return Card(
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Row(
                   children: [
-                    Image.network(e.produk['foto']??'', width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (_,__,___)=>const Icon(Icons.image)),
+                    Image.network(e.gambar, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (_,__,___)=>const Icon(Icons.image)),
                     const SizedBox(width: 10),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(e.produk['nama'], style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      Text('Rp ${fmt(e.harga)}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                      Text('Rp ${fmt(e.harga * e.qty)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4A148C))),
+                      Text(e.namaProduk, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text('${e.varian} • Rp ${fmt(e.harga)}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                      Text('Rp ${fmt(e.harga * e.jumlah)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4A148C))),
                     ])),
-                    const SizedBox(width: 10),
-                    // INI INPUT LANGSUNG EDIT BUKAN +/-
                     SizedBox(
                       width: 80,
                       child: TextField(
@@ -94,9 +93,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
                         decoration: InputDecoration(labelText: 'Jml', isDense: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8)),
                         onChanged: (v) {
                           int? n = int.tryParse(v);
-                          if (n!= null && n > 0) {
-                            context.read<CartProvider>().setQty(e.produk['id'], n);
-                          }
+                          if (n!= null && n > 0) context.read<CartProvider>().setQty(cartId, n);
                         },
                       ),
                     ),
@@ -114,7 +111,7 @@ class _HalamanCheckoutState extends State<HalamanCheckout> {
           const SizedBox(height: 10),
           TextField(controller: _wa, decoration: const InputDecoration(labelText: 'No HP / WA', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
           const SizedBox(height: 20),
-          SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: _loading?null:kirim, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6F00)), child: Text(_loading?'MENGIRIM...':'KIRIM ORDER', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
+          SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: _loading?null:kirim, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF6F00)), child: Text(_loading?'MENGIRIM...':'KIRIM & WA ADMIN', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
         ],
       ),
     );
